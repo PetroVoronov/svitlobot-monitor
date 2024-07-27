@@ -132,7 +132,7 @@ const storeSession = new StoreSession(`data/session/${options.asBot ? 'bot' : 'u
   statsBufferMaxLength = 60,
   tendencyOn = 'on',
   tendencyOff = 'off',
-  timeInterval = options.timeInterval * 60 * 1000,
+  timeInterval = (options.timeInterval * 60  + 1) * 1000,
   refreshInterval = options.refreshInterval * 60 * 1000;
 
 let telegramClient = null,
@@ -419,13 +419,13 @@ function checkGroupTendency() {
         if (items.length === 12 && items[3].startsWith(cityId) && items[9] === groupId && '12'.includes(items[1])) {
           groupData.push({
             on: items[1] === '1',
-            timeStamp: new Date(items[2]).valueOf(),
+            timeStamp: new Date(items[2]).getTime(),
           });
         }
       });
       const groupDataOn = dataClean(groupData.filter((item) => item.on === true)),
         groupDataOff = dataClean(groupData.filter((item) => item.on === false)),
-        dateBack = new Date(new Date().valueOf() - timeInterval);
+        dateBack = new Date(new Date().getTime() - timeInterval);
       stats.on = groupDataOn.length;
       stats.off = groupDataOff.length;
       stats.total = stats.on + stats.off;
@@ -437,7 +437,7 @@ function checkGroupTendency() {
       if (statsBuffer.length > statsBufferMaxLength) {
         statsBuffer.shift();
       }
-      const statsToCompare = statsBuffer.find((item) => item.timeStamp >= dateBack);
+      const statsToCompare = statsBuffer.find((item) => item.timeStamp.getTime() >= dateBack.getTime());
       if (statsToCompare !== undefined) {
         const percentageDelta = Math.abs(stats.percentage - statsToCompare.percentage);
         if (percentageDelta >= options.valueStep) {
