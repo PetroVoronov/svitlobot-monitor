@@ -22,8 +22,6 @@ const storage = new LocalStorage('data/storage'),
 
 let telegramChatId = parseInt(process.env.TELEGRAM_CHAT_ID) || cache.getItem('telegramChatId') || 0,
   telegramTopicId = parseInt(process.env.TELEGRAM_TOPIC_ID) || cache.getItem('telegramTopicId') || 0,
-  svitlobotDeltaTimeInterval = parseInt(process.env.SVITLOBOT_DELTA_TIME_INTERVAL) || cache.getItem('svitlobotDeltaTimeInterval') || 0,
-  svitlobotDeltaValueStep = parseInt(process.env.SVITLOBOT_DELTA_VALUE_STEP) || cache.getItem('svitlobotDeltaValueStep') || 0,
   apiId = parseInt(process.env.TELEGRAM_API_ID) || cache.getItem('telegramApiId', 'number'),
   apiHash = process.env.TELEGRAM_API_HASH || cache.getItem('telegramApiHash'),
   botAuthToken = process.env.TELEGRAM_BOT_AUTH_TOKEN || cache.getItem('telegramBotAuthToken');
@@ -33,9 +31,6 @@ if (apiHash) cache.setItem('telegramApiHash', apiHash);
 if (botAuthToken) cache.setItem('telegramBotAuthToken', botAuthToken);
 if (telegramChatId) cache.setItem('telegramChatId', telegramChatId);
 if (telegramTopicId) cache.setItem('telegramTopicId', telegramTopicId);
-if (svitlobotDeltaTimeInterval) cache.setItem('svitlobotDeltaTimeInterval', svitlobotDeltaTimeInterval);
-if (svitlobotDeltaValueStep) cache.setItem('svitlobotDeltaValueStep', svitlobotDeltaValueStep);
-
 
 const options = yargs
   .usage('Usage: $0 [options]')
@@ -44,6 +39,34 @@ const options = yargs
     describe: 'Language code for i18n',
     type: 'string',
     default: 'en',
+    demandOption: false,
+  })
+  .option('g', {
+    alias: 'group',
+    describe: 'DTEK group id',
+    type: 'number',
+    default: 1,
+    demandOption: false,
+  })
+  .option('i', {
+    alias: 'time-interval',
+    describe: 'Time interval in minutes, to detect the tendency',
+    type: 'number',
+    default: 2,
+    demandOption: false,
+  })
+  .option('s', {
+    alias: 'value-step',
+    describe: 'Value step in percentage, to detect the tendency',
+    type: 'number',
+    default: 5,
+    demandOption: false,
+  })
+  .option('r', {
+    alias: 'refresh-interval',
+    describe: 'Refresh interval in minutes, to get the data',
+    type: 'number',
+    default: 1,
     demandOption: false,
   })
   .option('n', {
@@ -101,9 +124,19 @@ setLogLevel(options.debug ? logLevelDebug : logLevelInfo);
 
 i18n.setLocale(options.language);
 
-const storeSession = new StoreSession(`data/session/${options.asBot ? 'bot' : 'user'}`);
+const storeSession = new StoreSession(`data/session/${options.asBot ? 'bot' : 'user'}`),
+  svitloBotAPI = 'https://api.svitlobot.in.ua/website/getChannelsForMap',
+  cityId = 'Київ ->',
+  groupId = `Київ -> Група ${options.group}`,
+  statsBuffer = [],
+  statsBufferMaxLength = 60,
+  tendencyOn = 'on',
+  tendencyOff = 'off',
+  timeInterval = options.timeInterval * 60 * 1000,
+  refreshInterval = options.refreshInterval * 60 * 1000;
 
-let telegramClient = null;
+let telegramClient = null,
+  tendency = '';
 
 function getAPIAttributes() {
   return new Promise((resolve, reject) => {
@@ -320,38 +353,125 @@ function telegramMessageOnChange(startedSwitchingOn) {
     telegramMessage = {
       message: `${options.addTimestamp ? timeStamp + ': ' : ''}${message}`,
     };
-  if (topicId > 0) {
-    telegramMessage.replyTo = topicId;
-  }
-  telegramClient.sendMessage(targetEntity, telegramMessage).then((message) => {
-    logDebug(`Telegram message sent to ${chatId} with topic ${topicId}`);
-    if (options.pinMessage) {
-      telegramClient.pinMessage(targetEntity, message.id).then(() => {
-        logDebug(`Telegram message pinned to ${chatId} with topic ${topicId}`);
-        if (options.unpinPrevious) {
-          const previousMessageId = cache.getItem('lastMessageId');
-          if (previousMessageId !== undefined) {
-            telegramClient.unpinMessage(targetEntity, previousMessageId).then(() => {
-              logDebug(`Telegram message unpinned from ${chatId} with topic ${topicId}`);
+  if (telegramClient !== null) {
+    if (topicId > 0) {
+      telegramMessage.replyTo = topicId;
+    }
+    telegramClient
+      .sendMessage(targetEntity, telegramMessage)
+      .then((message) => {
+        logDebug(`Telegram message sent to ${chatId} with topic ${topicId}`);
+        if (options.pinMessage) {
+          telegramClient
+            .pinMessage(targetEntity, message.id)
+            .then(() => {
+              logDebug(`Telegram message pinned to ${chatId} with topic ${topicId}`);
+              if (options.unpinPrevious) {
+                const previousMessageId = cache.getItem('lastMessageId');
+                if (previousMessageId !== undefined) {
+                  telegramClient.unpinMessage(targetEntity, previousMessageId).then(() => {
+                    logDebug(`Telegram message unpinned from ${chatId} with topic ${topicId}`);
+                  });
+                }
+              }
+            })
+            .catch((error) => {
+              logError(`Telegram message pin error: ${error}`);
             });
+        }
+        cache.setItem('lastMessageId', message.id);
+      })
+      .catch((error) => {
+        logError(`Telegram message error: ${error}`);
+      });
+  } else {
+    logInfo(`${telegramMessage.message}`);
+  }
+}
+
+function dataClean(data) {
+  if (data.length > 2) {
+    const sum = data.reduce((acc, item) => acc + item.timeStamp, 0),
+      avg = sum / data.length,
+      variance = data.reduce((acc, item) => acc + Math.pow(item.timeStamp - avg, 2), 0) / data.length,
+      stdDev = Math.sqrt(variance);
+    return data.filter((item) => item.timeStamp >= avg - stdDev && item.timeStamp <= avg + stdDev);
+  } else {
+    return data;
+  }
+}
+
+function checkGroupTendency() {
+  axios.get(svitloBotAPI).then((response) => {
+    const data = response.data,
+      stats = {
+        on: 0,
+        off: 0,
+        total: 0,
+        percentage: 0,
+        timeStamp: new Date(),
+      };
+    if (typeof data === 'string' && data.length > 0) {
+      const lines = data.split('\n'),
+        groupData = [];
+      lines.forEach((line) => {
+        const items = line.split(';&&&;');
+        if (items.length === 12 && items[3].startsWith(cityId) && items[9] === groupId && '12'.includes(items[1])) {
+          groupData.push({
+            on: items[1] === '1',
+            timeStamp: new Date(items[2]).valueOf(),
+          });
+        }
+      });
+      const groupDataOn = dataClean(groupData.filter((item) => item.on === true)),
+        groupDataOff = dataClean(groupData.filter((item) => item.on === false)),
+        dateBack = new Date(new Date().valueOf() - timeInterval);
+      stats.on = groupDataOn.length;
+      stats.off = groupDataOff.length;
+      stats.total = stats.on + stats.off;
+      stats.percentage = stats.total > 0 ? Math.round((stats.on / stats.total) * 100) : 0;
+      logDebug(
+        `For group ${groupId} - "on" percentage is ${stats.percentage}%, the other statistics are: ${stats.on} "on", ${stats.off} "off", ${stats.total} total`,
+      );
+      statsBuffer.push(stats);
+      if (statsBuffer.length > statsBufferMaxLength) {
+        statsBuffer.shift();
+      }
+      const statsToCompare = statsBuffer.find((item) => item.timeStamp >= dateBack);
+      if (statsToCompare !== undefined) {
+        const percentageDelta = Math.abs(stats.percentage - statsToCompare.percentage);
+        if (percentageDelta >= options.valueStep) {
+          if (stats.percentage > statsToCompare.percentage) {
+            if (tendency !== tendencyOn) {
+              tendency = tendencyOn;
+              telegramMessageOnChange(true);
+            }
+          } else {
+            if (tendency !== tendencyOff) {
+              tendency = tendencyOff;
+              telegramMessageOnChange(false);
+            }
           }
         }
-      }).catch((error) => {
-        logError(`Telegram message pin error: ${error}`);
-      });
+      }
+    } else {
+      logWarning('No data received from SvitloBot API!');
     }
-    cache.setItem('lastMessageId', message.id);
-  }).catch((error) => {
-    logError(`Telegram message error: ${error}`);
   });
 }
 
+function startCheckGroupTendency() {
+  checkGroupTendency();
+  setInterval(() => {
+    checkGroupTendency();
+  }, refreshInterval);
+}
 
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
-if (options.noTelegram === true ) {
-  exit(0);
+if (options.noTelegram === true) {
+  startCheckGroupTendency();
 } else {
   logInfo('Starting Telegram client...');
   getAPIAttributes()
@@ -367,6 +487,7 @@ if (options.noTelegram === true ) {
                 .then((entity) => {
                   logInfo('Telegram target entity is found. ');
                   targetEntity = entity;
+                  startCheckGroupTendency();
                 })
                 .catch((error) => {
                   logError(`Telegram target peer error: ${error}`);
