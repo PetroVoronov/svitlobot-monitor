@@ -350,28 +350,41 @@ function telegramMessageOnChange(startedSwitchingOn) {
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
-if (options.noTelegram ==true ) {
+if (options.noTelegram === true ) {
   exit(0);
 } else {
   logInfo('Starting Telegram client...');
-
-  getTelegramClient()
-    .then((client) => {
-      logInfo('Telegram client is connected. Getting target entity ...');
-      telegramClient = client;
-      telegramClient.setParseMode('html');
-      getTelegramTargetEntity()
-        .then((entity) => {
-          logInfo('Telegram target entity is found. ');
-          targetEntity = entity;
+  getAPIAttributes()
+    .then(() => {
+      getMessageTargetIds()
+        .then(() => {
+          getTelegramClient()
+            .then((client) => {
+              logInfo('Telegram client is connected. Getting target entity ...');
+              telegramClient = client;
+              telegramClient.setParseMode('html');
+              getTelegramTargetEntity()
+                .then((entity) => {
+                  logInfo('Telegram target entity is found. ');
+                  targetEntity = entity;
+                })
+                .catch((error) => {
+                  logError(`Telegram target peer error: ${error}`);
+                  gracefulExit();
+                });
+            })
+            .catch((error) => {
+              logError(`Telegram client error: ${error}`);
+              gracefulExit();
+            });
         })
         .catch((error) => {
-          logError(`Telegram target peer error: ${error}`);
+          logError(`Error: ${error}`);
           gracefulExit();
         });
     })
     .catch((error) => {
-      logError(`Telegram client error: ${error}`);
+      logError(`Error: ${error}`);
       gracefulExit();
     });
 }
