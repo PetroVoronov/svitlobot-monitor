@@ -188,18 +188,18 @@ function getAPIAttributes() {
 
 function getMessageTargetIds() {
   return new Promise((resolve, reject) => {
-    if (chatId === null || topicId === null) {
+    if (telegramChatId === null || telegramTopicId === null) {
       const rl = readline.createInterface({
         input,
         output,
       });
       rl.question('Enter your chat ID: ')
         .then((id) => {
-          chatId = id;
+          telegramChatId = id;
           cache.setItem('telegramChatId', id);
           rl.question('Enter your topic ID(0 - if no topics): ')
             .then((id) => {
-              topicId = parseInt(id);
+              telegramTopicId = parseInt(id);
               cache.setItem('telegramTopicId', id);
               rl.close();
               resolve();
@@ -286,9 +286,9 @@ function getTelegramTargetEntity() {
       .getDialogs()
       .then((dialogs) => {
         const availableDialogs = dialogs.filter((dialog) => dialog.entity?.migratedTo === undefined || dialog.entity?.migratedTo === null),
-          targetDialog = availableDialogs.find((item) => `${chatId}` === `${item.entity.id}`);
+          targetDialog = availableDialogs.find((item) => `${telegramChatId}` === `${item.entity.id}`);
         if (targetDialog !== undefined) {
-          if (topicId > 0) {
+          if (telegramTopicId > 0) {
             telegramClient
               .invoke(
                 new Api.channels.GetForumTopics({
@@ -301,15 +301,15 @@ function getTelegramTargetEntity() {
               )
               .then((response) => {
                 if (Array.isArray(response.topics) && response.topics.length > 0) {
-                  if (response.topics.find((topic) => topic.id === topicId) === undefined) {
-                    logWarning(`Topic with id ${topicId} not found in ${targetDialog.title} (${chatId})!`);
-                    reject(new Error(`Topic with id ${topicId} not found in ${targetDialog.title} (${chatId})!`));
+                  if (response.topics.find((topic) => topic.id === telegramTopicId) === undefined) {
+                    logWarning(`Topic with id ${telegramTopicId} not found in ${targetDialog.title} (${telegramChatId})!`);
+                    reject(new Error(`Topic with id ${telegramTopicId} not found in ${targetDialog.title} (${telegramChatId})!`));
                   } else {
                     resolve(targetDialog.entity);
                   }
                 } else {
-                  logWarning(`No topics found in ${targetDialog.title} (${chatId})!`);
-                  reject(new Error(`No topics found in ${targetDialog.title} (${chatId})!`));
+                  logWarning(`No topics found in ${targetDialog.title} (${telegramChatId})!`);
+                  reject(new Error(`No topics found in ${targetDialog.title} (${telegramChatId})!`));
                 }
               })
               .catch((error) => {
@@ -319,7 +319,7 @@ function getTelegramTargetEntity() {
             resolve(targetDialog.entity);
           }
         } else {
-          reject(new Error(`Telegram chat with ID ${chatId} not found`));
+          reject(new Error(`Telegram chat with ID ${telegramChatId} not found`));
         }
       })
       .catch((error) => {
@@ -335,6 +335,7 @@ function gracefulExit() {
       telegramClient.destroy().then(() => {
         logInfo(`Telegram client is destroyed!`);
         telegramClient = null;
+        exit(0);
       });
     });
   } else {
@@ -354,23 +355,23 @@ function telegramMessageOnChange(startedSwitchingOn) {
       message: `${options.addTimestamp ? timeStamp + ': ' : ''}${message}`,
     };
   if (telegramClient !== null) {
-    if (topicId > 0) {
-      telegramMessage.replyTo = topicId;
+    if (telegramTopicId > 0) {
+      telegramMessage.replyTo = telegramTopicId;
     }
     telegramClient
       .sendMessage(targetEntity, telegramMessage)
       .then((message) => {
-        logDebug(`Telegram message sent to ${chatId} with topic ${topicId}`);
+        logDebug(`Telegram message sent to ${telegramChatId} with topic ${telegramTopicId}`);
         if (options.pinMessage) {
           telegramClient
             .pinMessage(targetEntity, message.id)
             .then(() => {
-              logDebug(`Telegram message pinned to ${chatId} with topic ${topicId}`);
+              logDebug(`Telegram message pinned to ${telegramChatId} with topic ${telegramTopicId}`);
               if (options.unpinPrevious) {
                 const previousMessageId = cache.getItem('lastMessageId');
                 if (previousMessageId !== undefined) {
                   telegramClient.unpinMessage(targetEntity, previousMessageId).then(() => {
-                    logDebug(`Telegram message unpinned from ${chatId} with topic ${topicId}`);
+                    logDebug(`Telegram message unpinned from ${telegramChatId} with topic ${telegramTopicId}`);
                   });
                 }
               }
