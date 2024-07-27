@@ -132,7 +132,7 @@ const storeSession = new StoreSession(`data/session/${options.asBot ? 'bot' : 'u
   statsBufferMaxLength = 60,
   tendencyOn = 'on',
   tendencyOff = 'off',
-  timeInterval = (options.timeInterval * 60  + 1) * 1000,
+  timeInterval = (options.timeInterval * 60 + 1) * 1000,
   refreshInterval = options.refreshInterval * 60 * 1000;
 
 let telegramClient = null,
