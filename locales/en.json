@@ -1,3 +1,5 @@
 {
-	"Switching on is started": "Switching on is started"
+	"Switching on is started": "Switching on is started",
+	"Group %s - switching to on is started": "Group %s - switching to on is started",
+	"Group %s - switching to off is started": "Group %s - switching to off is started"
 }

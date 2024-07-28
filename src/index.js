@@ -345,7 +345,7 @@ function gracefulExit() {
 }
 
 function telegramMessageOnChange(startedSwitchingOn) {
-  const message = i18n.__(startedSwitchingOn ? 'Switching on is started' : 'Switching off is started'),
+  const message = i18n.__(startedSwitchingOn ? 'Group %s - switching to on is started' : 'Group %s - switching to off is started', groupId),
     timeStampOptions = {timeStyle: 'short', dateStyle: 'short'};
   if (options.timeZone) {
     timeStampOptions.timeZone = options.timeZone;
