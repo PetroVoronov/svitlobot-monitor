@@ -12,6 +12,7 @@ const {CallbackQuery, CallbackQueryEvent} = require('telegram/events/CallbackQue
 const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
 const axios = require('axios');
+const fs = require('node:fs');
 
 const storage = new LocalStorage('data/storage'),
   cache = new Cache({
@@ -115,6 +116,13 @@ const options = yargs
     type: 'boolean',
     demandOption: false,
   })
+  .option('w', {
+    alias: 'wrong-groups',
+    describe: 'File with wrong groups',
+    type: 'string',
+    default: '',
+    demandOption: false,
+  })
   .version(scriptVersion)
   .help('h')
   .alias('h', 'help')
@@ -134,8 +142,8 @@ const storeSession = new StoreSession(`data/session/${options.asBot ? 'bot' : 'u
   tendencyOff = 'off',
   timeInterval = (options.timeInterval * 60 + 1) * 1000,
   refreshInterval = options.refreshInterval * 60 * 1000;
-
 let telegramClient = null,
+  wrongGroups = [],
   tendency = '';
 
 function getAPIAttributes() {
@@ -417,7 +425,13 @@ function checkGroupTendency() {
         groupData = [];
       lines.forEach((line) => {
         const items = line.split(';&&&;');
-        if (items.length === 12 && items[3].startsWith(cityId) && items[9] === groupId && '12'.includes(items[1])) {
+        if (
+          items.length === 12 &&
+          items[3].startsWith(cityId) &&
+          items[9] === groupId &&
+          '12'.includes(items[1]) &&
+          wrongGroups.includes(items[3]) === false
+        ) {
           groupData.push({
             on: items[1] === '1',
             timeStamp: new Date(items[2]).getTime(),
@@ -468,45 +482,63 @@ function startCheckGroupTendency() {
   }, refreshInterval);
 }
 
+function readWrongGroups() {
+  return new Promise((resolve, reject) => {
+    if (options.wrongGroups === '') {
+      resolve();
+    }
+    fs.readFile(options.wrongGroups, 'utf8', (error, data) => {
+      if (error) {
+        reject(error);
+      } else {
+        wrongGroups = data.split('\n');
+        resolve();
+      }
+    });
+  });
+}
+
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
-if (options.noTelegram === true) {
-  startCheckGroupTendency();
-} else {
-  logInfo('Starting Telegram client...');
-  getAPIAttributes()
-    .then(() => {
-      getMessageTargetIds()
-        .then(() => {
-          getTelegramClient()
-            .then((client) => {
-              logInfo('Telegram client is connected. Getting target entity ...');
-              telegramClient = client;
-              telegramClient.setParseMode('html');
-              getTelegramTargetEntity()
-                .then((entity) => {
-                  logInfo('Telegram target entity is found. ');
-                  targetEntity = entity;
-                  startCheckGroupTendency();
-                })
-                .catch((error) => {
-                  logError(`Telegram target peer error: ${error}`);
-                  gracefulExit();
-                });
-            })
-            .catch((error) => {
-              logError(`Telegram client error: ${error}`);
-              gracefulExit();
-            });
-        })
-        .catch((error) => {
-          logError(`Error: ${error}`);
-          gracefulExit();
-        });
-    })
-    .catch((error) => {
-      logError(`Error: ${error}`);
-      gracefulExit();
-    });
-}
+readWrongGroups().then(() => {
+  if (options.noTelegram === true) {
+    startCheckGroupTendency();
+  } else {
+    logInfo('Starting Telegram client...');
+    getAPIAttributes()
+      .then(() => {
+        getMessageTargetIds()
+          .then(() => {
+            getTelegramClient()
+              .then((client) => {
+                logInfo('Telegram client is connected. Getting target entity ...');
+                telegramClient = client;
+                telegramClient.setParseMode('html');
+                getTelegramTargetEntity()
+                  .then((entity) => {
+                    logInfo('Telegram target entity is found. ');
+                    targetEntity = entity;
+                    startCheckGroupTendency();
+                  })
+                  .catch((error) => {
+                    logError(`Telegram target peer error: ${error}`);
+                    gracefulExit();
+                  });
+              })
+              .catch((error) => {
+                logError(`Telegram client error: ${error}`);
+                gracefulExit();
+              });
+          })
+          .catch((error) => {
+            logError(`Error: ${error}`);
+            gracefulExit();
+          });
+      })
+      .catch((error) => {
+        logError(`Error: ${error}`);
+        gracefulExit();
+      });
+  }
+});
