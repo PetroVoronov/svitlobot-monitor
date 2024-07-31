@@ -123,6 +123,12 @@ const options = yargs
     default: '',
     demandOption: false,
   })
+  .option('reassign-groups', {
+    describe: 'Reassign groups from the Yasno site',
+    type: 'boolean',
+    default: false,
+    demandOption: false,
+  })
   .version(scriptVersion)
   .help('h')
   .alias('h', 'help')
@@ -480,10 +486,14 @@ function checkGroupTendency() {
 }
 
 function startCheckGroupTendency() {
-  checkGroupTendency();
-  setInterval(() => {
+  if (options.reassignGroups) {
+    reassignGroups();
+  } else {
     checkGroupTendency();
-  }, refreshInterval);
+    setInterval(() => {
+      checkGroupTendency();
+    }, refreshInterval);
+  }
 }
 
 function readWrongGroups() {
@@ -500,6 +510,174 @@ function readWrongGroups() {
       }
     });
   });
+}
+
+async function reassignGroups() {
+  const yasnoAPI = {
+      base: 'https://api.yasno.com.ua/api/v1',
+      city: '/electricity-outages-schedule/cities',
+      street: '/electricity-outages-schedule/streets',
+      building: '/electricity-outages-schedule/houses',
+      schedule: '/pages/home/schedule-turn-off-electricity',
+    },
+    streetTypes = [
+      {
+        id: 'вул.',
+        keys: ['вулиця', 'вул.'],
+      },
+      {
+        id: 'просп.',
+        keys: ['проспект', 'просп.', 'просп ', 'пр-т', 'пр.', 'проспю'],
+      },
+      {
+        id: 'пл.',
+        keys: ['площа', 'пл.'],
+      },
+      {
+        id: 'пров.',
+        keys: ['провулок', 'пров.', 'пров '],
+      },
+      {
+        id: 'шосе',
+        keys: ['шосе', 'шос.', 'шос '],
+      },
+      {
+        id: 'бул.',
+        keys: ['бульвар', 'бульв.', 'бульв', 'б-р', 'бул.', 'бул '],
+      },
+      {
+        id: 'проїзд',
+        keys: ['проїзд', 'проїзд.', 'проїзд ', 'пр-д', 'пр-д.', 'пр-д '],
+      },
+      {
+        id: 'наб.',
+        keys: ['набережна', 'наб.', 'наб '],
+      },
+    ];
+  const responseStreets = await axios.get(`${yasnoAPI.base}${yasnoAPI.street}?region=kiev`);
+  let streets = responseStreets.data;
+  if (streets.length > 0) {
+    streets = streets.map((item) => ({
+      id: item.id,
+      name: item.name
+        .replaceAll('  ', ' ')
+        .replace(/\.(\S)/g, '. $1')
+        .replace(/(\S)\(/, '$1 (')
+        .toLocaleLowerCase(),
+    }));
+    const responseSvitloBot = await axios.get(svitloBotAPI),
+      data = responseSvitloBot.data;
+    if (typeof data === 'string' && data.length > 0) {
+      // const lines = data.split('\n');
+      const lines = ['Київ ->;&&&;1;&&&;2022-01-01T00:00:00;&&&;Київ -> дніпровська набережна 26к'],
+        groupData = [];
+      let wrongCount = 0,
+        cityTotal = 0,
+        wrongBuildingCount = 0,
+        groupOne = 0;
+      for (const line of lines) {
+        const items = line.split(';&&&;');
+        if (/* items.length === 12  && */ items[3]?.startsWith(cityId)) {
+          const addressRaw = items[3].replace(`${cityId} `, '').replace(`${cityId}`, '').toLocaleLowerCase();
+          let streetType = '',
+            addressNoType = addressRaw.replace(/^.\./, '');
+          for (const type of streetTypes) {
+            for (const key of type.keys) {
+              if (addressRaw.includes(key)) {
+                streetType = type.id;
+                addressNoType = addressNoType.replace(key, '');
+                break;
+              }
+            }
+          }
+          const addressSplitted = addressNoType.split(' ').filter((item) => item.length > 0);
+          let building = addressSplitted.length > 1 ? addressSplitted.pop() : '',
+            street = addressSplitted.join(' ').replace(',', ''),
+            streetReverse = addressSplitted.reverse().join(' ').replace(',', '');
+          // console.log(`Street: ${street}, Type: ${streetType}, Building: ${building}`);
+          let streetId = 0;
+          const streetVariations =
+            addressSplitted.length === 2
+              ? [
+                  street,
+                  streetReverse,
+                  `${addressSplitted[0][0]}. ${addressSplitted[1]}`,
+                  `${addressSplitted[1][0]}. ${addressSplitted[0]}`,
+                ]
+              : [street];
+          if (street.match(/\d+/)) {
+            streetVariations.push(street.replace(/\s*\d+,*\s*/g, ''));
+            streetVariations.push(street.replace(/\s*\d+,*\s*/g, ''));
+          }
+          let streetData = [],
+            streetsData = [];
+          for (const street of streetVariations) {
+            streetData = streets.filter((item) => item.name.includes(` ${street}`));
+            if (streetData.length > 1) {
+              streetData = streetData.filter((item) => item.name.startsWith(`${streetType || 'вул.'} `));
+              if (streetData.length === 1 || streetData.length === 2) {
+                streetsData.push(...streetData);
+              }
+            }
+            if (streetData.length === 1) {
+              streetsData.push(...streetData);
+            }
+          }
+          if (streetsData.length === 0) {
+            wrongCount++;
+            // console.log(
+            //   'Wrong street data: ',
+            //   `Raw: ${addressRaw}, Street: ${street}, Type: ${streetType}, Building: ${building}, Street data: ${stringify(streetData)}`,
+            // );
+          } else {
+            if (building.match(/^\d+\D$/)) {
+              const buildingData = /^(\d+)(\D)$/.exec(building);
+              if (buildingData !== null && buildingData.length === 3) {
+                building = `${buildingData[1]}/${buildingData[2]}`;
+              }
+            } else {
+              building = building.replace('-', '/');
+            }
+            let groupId = 0;
+            for (const streetId of streetsData.map((item) => item.id)) {
+              await new Promise((resolve) => setTimeout(resolve, 400));
+              const responseBuildings = await axios.get(`${yasnoAPI.base}${yasnoAPI.building}?region=kiev&street_id=${streetId}`),
+                buildings = responseBuildings.data;
+              if (Array.isArray(buildings) && buildings.length > 0) {
+                const buildingData = buildings.filter(
+                  (item) => item.name.toLocaleLowerCase() == building /* ||
+                    (item.name.match(/^\d+\/\d+/) && item.name.startsWith(`${building}/`)) ||
+                    (building.match(/^\d+\/\d+/) && item.name === building.split('/')[0]) */,
+                );
+                if (buildingData.length === 1) {
+                  groupId = buildingData[0].group;
+                  /* console.log(
+                    `Raw: ${addressRaw}, Street: ${street}, Type: ${streetType}, Building: ${building}, StreetId: ${streetId}, Building data: ${stringify(
+                      buildingData,
+                    )}`,
+                  ); */
+                }
+              }
+            }
+            if (groupId === 0) {
+              wrongBuildingCount++;
+              console.log(
+                'Wrong building data: ',
+                `Raw: ${addressRaw}, Street: ${street}, Type: ${streetType}, Building: ${building}, Streets data: ${stringify(
+                  streetsData,
+                )}`,
+              );
+            } else if (groupId === 1) {
+              groupOne++;
+            }
+          }
+          cityTotal++;
+        }
+      }
+      console.log(`Wrong count: ${wrongCount}, wrong building count: ${wrongBuildingCount}, total: ${lines.length}`);
+      console.log(`Group one count: ${groupOne}, addresses "good": ${cityTotal - wrongCount - wrongBuildingCount}`);
+    }
+  }
 }
 
 process.on('SIGINT', gracefulExit);

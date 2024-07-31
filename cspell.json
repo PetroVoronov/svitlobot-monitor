@@ -12,7 +12,8 @@
         "MTProto",
         "sonarjs",
         "svitlobot",
-        "Voronov"
+        "Voronov",
+        "Yasno"
     ],
     "ignoreWords": [],
     "import": []
