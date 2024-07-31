@@ -148,6 +148,14 @@ const storeSession = new StoreSession(`data/session/${options.asBot ? 'bot' : 'u
   tendencyOff = 'off',
   timeInterval = (options.timeInterval * 60 + 1) * 1000,
   refreshInterval = options.refreshInterval * 60 * 1000;
+  (nominatimReverseAPI = 'https://nominatim.openstreetmap.org/reverse'),
+    (nominatimHeaders = {
+      'User-Agent': `${scriptName} v${scriptVersion}`,
+      'Accept-Language': 'uk-UA,uk;q=0.9',
+    }),
+    (nominatimTimeoutMin = 1500),
+    (reassignData = cache.getItem('reassignData') || []),
+    streetsRenames = {};
 let telegramClient = null,
   wrongGroups = [],
   tendency = '';
@@ -434,7 +442,9 @@ function checkGroupTendency() {
         if (
           items.length === 12 &&
           items[3].startsWith(cityId) &&
-          items[9] === groupId &&
+          ((options.reassignGroups === false && items[9] === groupId) ||
+            (options.reassignGroups === true &&
+              reassignData.find((item) => item.latitude === items[6] && item.longitude === items[7])?.groupId == options.group)) &&
           '12'.includes(items[1]) &&
           wrongGroups.includes(items[3]) === false
         ) {
@@ -488,6 +498,7 @@ function checkGroupTendency() {
 function startCheckGroupTendency() {
   if (options.reassignGroups) {
     reassignGroups();
+    checkGroupTendency();
   } else {
     checkGroupTendency();
     setInterval(() => {
@@ -506,6 +517,24 @@ function readWrongGroups() {
         reject(error);
       } else {
         wrongGroups = data.split('\n');
+        resolve();
+      }
+    });
+  });
+}
+
+function readStreetsRenames() {
+  return new Promise((resolve, reject) => {
+    fs.readFile('streets_renames.csv', 'utf8', (error, data) => {
+      if (error) {
+        resolve();
+      } else {
+        data.split('\n').forEach((line) => {
+          const items = line.split(';');
+          if (items.length === 2) {
+            streetsRenames[items[0]] = items[1];
+          }
+        });
         resolve();
       }
     });
@@ -543,7 +572,7 @@ async function reassignGroups() {
       },
       {
         id: 'бул.',
-        keys: ['бульвар', 'бульв.', 'бульв', 'б-р', 'бул.', 'бул '],
+        keys: ['бульвар', 'бульв.', /* 'бульв ',  */'б-р', 'бул.', 'бул '],
       },
       {
         id: 'проїзд',
@@ -557,123 +586,213 @@ async function reassignGroups() {
   const responseStreets = await axios.get(`${yasnoAPI.base}${yasnoAPI.street}?region=kiev`);
   let streets = responseStreets.data;
   if (streets.length > 0) {
-    streets = streets.map((item) => ({
-      id: item.id,
-      name: item.name
-        .replaceAll('  ', ' ')
-        .replace(/\.(\S)/g, '. $1')
-        .replace(/(\S)\(/, '$1 (')
-        .toLocaleLowerCase(),
-    }));
+    streets = streets
+      .filter((item) => item.name.includes('(') === false && item.name.includes(',') === false)
+      .map((item) => ({
+        id: item.id,
+        name: item.name
+          .replaceAll('  ', ' ')
+          .replace(/\.(\S)/g, '. $1')
+          .replace(/(\S)\(/, '$1 (')
+          .replaceAll(' II', ' 2-го')
+          .toLocaleLowerCase(),
+      }));
     const responseSvitloBot = await axios.get(svitloBotAPI),
       data = responseSvitloBot.data;
     if (typeof data === 'string' && data.length > 0) {
-      // const lines = data.split('\n');
-      const lines = ['Київ ->;&&&;1;&&&;2022-01-01T00:00:00;&&&;Київ -> дніпровська набережна 26к'],
+      const lines = data.split('\n');
+      // const lines = [
+      //     '-1;&&&;1;&&&;2024-07-25T19:25:45+00:00;&&&;Київ -> Бульварно-Кудрявська 9;&&&;svitlobot_bulvarno_kudravska_9;&&&;19;&&&;50.4534493;&&&;30.504217;&&&;1;&&&;-;&&&;1;&&&;',
+      //   ],
         groupData = [];
       let wrongCount = 0,
         cityTotal = 0,
         wrongBuildingCount = 0,
-        groupOne = 0;
+        groupOne = 0,
+        index = 0;
       for (const line of lines) {
         const items = line.split(';&&&;');
-        if (/* items.length === 12  && */ items[3]?.startsWith(cityId)) {
+        if (items.length === 12 && items[3]?.startsWith(cityId)) {
           const addressRaw = items[3].replace(`${cityId} `, '').replace(`${cityId}`, '').toLocaleLowerCase();
-          let streetType = '',
-            addressNoType = addressRaw.replace(/^.\./, '');
-          for (const type of streetTypes) {
-            for (const key of type.keys) {
-              if (addressRaw.includes(key)) {
-                streetType = type.id;
-                addressNoType = addressNoType.replace(key, '');
-                break;
+          if (
+            (items[6].match(/\d+\.\d{5,}/) &&
+              items[7].match(/\d+\.\d{5,}/) &&
+              reassignData.find((item) => item.latitude === items[6] && item.longitude === items[7]) === undefined) /* ||
+            reassignData.find((item) => item.latitude === items[6] && item.longitude === items[7])?.groupId === 0 */
+          ) {
+            const reassignCurrent = {
+              latitude: items[6],
+              longitude: items[7],
+              address: items[3],
+              groupId: 0,
+            };
+            let nominatimTimeout = 600;
+            await new Promise((resolve) => setTimeout(resolve, 600));
+            const responseAddress = await axios.get(
+              `${nominatimReverseAPI}?format=jsonv2&lat=${items[6]}&lon=${items[7]}&zoom=18&addressdetails=1&layer=address`,
+              {
+                nominatimHeaders,
+              },
+            );
+            const addressData = responseAddress.data;
+            if (
+              typeof addressData?.address?.house_number === 'string' &&
+              addressData.address.house_number.length > 0 &&
+              typeof addressData?.address?.road === 'string' &&
+              addressData.address.road.length > 0
+            ) {
+              let streetType = '',
+                addressNoType = addressData.address.road.toLocaleLowerCase();
+              const streetPossibilities = [addressNoType];
+              if (streetsRenames[addressNoType] !== undefined) {
+                streetPossibilities.push(...streetsRenames[addressNoType].split(','));
               }
-            }
-          }
-          const addressSplitted = addressNoType.split(' ').filter((item) => item.length > 0);
-          let building = addressSplitted.length > 1 ? addressSplitted.pop() : '',
-            street = addressSplitted.join(' ').replace(',', ''),
-            streetReverse = addressSplitted.reverse().join(' ').replace(',', '');
-          // console.log(`Street: ${street}, Type: ${streetType}, Building: ${building}`);
-          let streetId = 0;
-          const streetVariations =
-            addressSplitted.length === 2
-              ? [
-                  street,
-                  streetReverse,
-                  `${addressSplitted[0][0]}. ${addressSplitted[1]}`,
-                  `${addressSplitted[1][0]}. ${addressSplitted[0]}`,
-                ]
-              : [street];
-          if (street.match(/\d+/)) {
-            streetVariations.push(street.replace(/\s*\d+,*\s*/g, ''));
-            streetVariations.push(street.replace(/\s*\d+,*\s*/g, ''));
-          }
-          let streetData = [],
-            streetsData = [];
-          for (const street of streetVariations) {
-            streetData = streets.filter((item) => item.name.includes(` ${street}`));
-            if (streetData.length > 1) {
-              streetData = streetData.filter((item) => item.name.startsWith(`${streetType || 'вул.'} `));
-              if (streetData.length === 1 || streetData.length === 2) {
-                streetsData.push(...streetData);
-              }
-            }
-            if (streetData.length === 1) {
-              streetsData.push(...streetData);
-            }
-          }
-          if (streetsData.length === 0) {
-            wrongCount++;
-            // console.log(
-            //   'Wrong street data: ',
-            //   `Raw: ${addressRaw}, Street: ${street}, Type: ${streetType}, Building: ${building}, Street data: ${stringify(streetData)}`,
-            // );
-          } else {
-            if (building.match(/^\d+\D$/)) {
-              const buildingData = /^(\d+)(\D)$/.exec(building);
-              if (buildingData !== null && buildingData.length === 3) {
-                building = `${buildingData[1]}/${buildingData[2]}`;
-              }
-            } else {
-              building = building.replace('-', '/');
-            }
-            let groupId = 0;
-            for (const streetId of streetsData.map((item) => item.id)) {
-              await new Promise((resolve) => setTimeout(resolve, 400));
-              const responseBuildings = await axios.get(`${yasnoAPI.base}${yasnoAPI.building}?region=kiev&street_id=${streetId}`),
-                buildings = responseBuildings.data;
-              if (Array.isArray(buildings) && buildings.length > 0) {
-                const buildingData = buildings.filter(
-                  (item) => item.name.toLocaleLowerCase() == building /* ||
-                    (item.name.match(/^\d+\/\d+/) && item.name.startsWith(`${building}/`)) ||
-                    (building.match(/^\d+\/\d+/) && item.name === building.split('/')[0]) */,
-                );
-                if (buildingData.length === 1) {
-                  groupId = buildingData[0].group;
-                  /* console.log(
-                    `Raw: ${addressRaw}, Street: ${street}, Type: ${streetType}, Building: ${building}, StreetId: ${streetId}, Building data: ${stringify(
-                      buildingData,
-                    )}`,
-                  ); */
+              for (const type of streetTypes) {
+                for (const key of type.keys) {
+                  if (addressNoType.includes(key)) {
+                    streetType = type.id;
+                    // addressNoType = addressNoType.replace(key, '').replaceAll('ʼ', "'");
+                    for (i = 0; i < streetPossibilities.length; i++) {
+                      streetPossibilities[i] = streetPossibilities[i].replace(key, '');
+                    }
+                    break;
+                  }
+                }
+                if (streetType.length > 0) {
+                  break;
                 }
               }
+              reassignCurrent.street = addressData.address.road;
+              reassignCurrent.building = addressData.address.house_number;
+
+              let building = addressData.address.house_number.toLocaleLowerCase();
+              // console.log(`Street: ${street}, Type: ${streetType}, Building: ${building}`);
+              const streetVariations = [];
+              streetPossibilities.forEach((streetAddress) => {
+                const addressSplitted = streetAddress.split(' ').filter((item) => item.length > 0),
+                  street = addressSplitted.join(' '),
+                  streetReverse = addressSplitted.reverse().join(' ');
+                streetVariations.push(street);
+                if (street !== streetReverse) {
+                  streetVariations.push(streetReverse);
+                }
+                if (addressSplitted.length === 2) {
+                  streetVariations.push(
+                    `${addressSplitted[0][0]}. ${addressSplitted[1]}`,
+                    `${addressSplitted[1][0]}. ${addressSplitted[0]}`,
+                  );
+                }
+              });
+              let streetData = [],
+                streetsData = [];
+              for (const street of streetVariations) {
+                streetData = streets.filter((item) => item.name == `${streetType.length > 0 ? streetType + ' ' : ''}${street}`);
+                if (streetData.length >= 1) {
+                  streetsData.push(...streetData);
+                }
+              }
+              if (streetsData.length === 0) {
+                wrongCount++;
+                // console.log(
+                //   'Wrong street data: ',
+                //   `Raw: ${addressRaw}, Street: ${street}, Type: ${streetType}, Building: ${building}, Street data: ${stringify(streetData)}`,
+                // );
+              } else {
+                if (building.match(/^\d+\D$/)) {
+                  const buildingData = /^(\d+)(\D)$/.exec(building);
+                  if (buildingData !== null && buildingData.length === 3) {
+                    building = `${buildingData[1]}/${buildingData[2]}`;
+                  }
+                } else {
+                  building = building.replace('-', '/');
+                }
+                for (const streetId of streetsData.map((item) => item.id)) {
+                  await new Promise((resolve) => setTimeout(resolve, 400));
+                  nominatimTimeout += 400;
+                  const responseBuildings = await axios.get(`${yasnoAPI.base}${yasnoAPI.building}?region=kiev&street_id=${streetId}`),
+                    buildings = responseBuildings.data;
+                  if (Array.isArray(buildings) && buildings.length > 0) {
+                    const buildingData = buildings.filter(
+                      (item) => item.name.toLocaleLowerCase() == building /* ||
+                        (item.name.match(/^\d+\/\d+/) && item.name.startsWith(`${building}/`)) ||
+                        (building.match(/^\d+\/\d+/) && item.name === building.split('/')[0]) */,
+                    );
+                    if (buildingData.length === 1) {
+                      reassignCurrent.groupId = buildingData[0].group;
+                      /* console.log(
+                        `Raw: ${addressRaw}, Street: ${street}, Type: ${streetType}, Building: ${building}, StreetId: ${streetId}, Building data: ${stringify(
+                          buildingData,
+                        )}`,
+                      ); */
+                    } else  if (buildingData.length > 1 ) {
+                      const firstItemGroup = buildingData[0].group;
+                      if (buildingData.every((item) => item.group === firstItemGroup)) {
+                        reassignCurrent.groupId = firstItemGroup;
+                      } else {
+                        console.log(
+                          'Multiple groups data: ',
+                          `Raw: ${addressRaw}, Street: ${streetPossibilities}, Type: ${streetType}, Building: ${building}, Buildings data: ${stringify(
+                            buildingData,
+                          )}`,
+                        );
+                      }
+                    } else {
+                      const buildingDataStarts =  buildings.filter(
+                      (item) => item.name.toLocaleLowerCase().startsWith(`${building}/`)
+                      );
+                      if (buildingDataStarts.length === 1) {
+                        reassignCurrent.groupId = buildingDataStarts[0].group;
+                      } else if (buildingDataStarts.length > 1) {
+                        const firstItemGroup = buildingDataStarts[0].group;
+                        if (buildingDataStarts.every((item) => item.group === firstItemGroup)) {
+                          reassignCurrent.groupId = firstItemGroup;
+                        } else {
+                          console.log(
+                            'Multiple groups data: ',
+                            `Raw: ${addressRaw}, Street: ${streetPossibilities}, Type: ${streetType}, Building: ${building}, Buildings data: ${stringify(
+                              buildingDataStarts,
+                            )}`,
+                          );
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              if (reassignCurrent.groupId === 0) {
+                wrongBuildingCount++;
+                console.log(
+                  'Wrong building data: ',
+                  `Raw: ${addressRaw}, Street: ${streetPossibilities}, Type: ${streetType}, Building: ${building}, Streets data: ${stringify(
+                    streetsData,
+                  )}`,
+                );
+              } else if (reassignCurrent.groupId === 1) {
+                groupOne++;
+              }
             }
-            if (groupId === 0) {
-              wrongBuildingCount++;
-              console.log(
-                'Wrong building data: ',
-                `Raw: ${addressRaw}, Street: ${street}, Type: ${streetType}, Building: ${building}, Streets data: ${stringify(
-                  streetsData,
-                )}`,
-              );
-            } else if (groupId === 1) {
-              groupOne++;
+            if (nominatimTimeout < nominatimTimeoutMin) {
+              await new Promise((resolve) => setTimeout(resolve, nominatimTimeoutMin - nominatimTimeout));
             }
-          }
+            const currentIndex = reassignData.findIndex((item) => item.latitude === items[6] && item.longitude === items[7]);
+            if (currentIndex !== -1) {
+              reassignData[currentIndex] = reassignCurrent;
+            } else {
+              reassignData.push(reassignCurrent);
+            }
+            index++;
+          } else if (reassignData.find((item) => item.latitude === items[6] && item.longitude === items[7])?.groupId === 1) {
+            groupOne++;
+          } /*  else if (reassignData.find((item) => item.latitude === items[6] && item.longitude === items[7])?.groupId === 0) {
+            wrongBuildingCount++;
+          } */
           cityTotal++;
+          // if (index > 50) {
+          //   break;
+          // }
         }
       }
+      cache.setItem('reassignData', reassignData);
       console.log(`Wrong count: ${wrongCount}, wrong building count: ${wrongBuildingCount}, total: ${lines.length}`);
       console.log(`Group one count: ${groupOne}, addresses "good": ${cityTotal - wrongCount - wrongBuildingCount}`);
     }
@@ -683,44 +802,46 @@ async function reassignGroups() {
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
-readWrongGroups().then(() => {
-  if (options.noTelegram === true) {
-    startCheckGroupTendency();
-  } else {
-    logInfo('Starting Telegram client...');
-    getAPIAttributes()
-      .then(() => {
-        getMessageTargetIds()
-          .then(() => {
-            getTelegramClient()
-              .then((client) => {
-                logInfo('Telegram client is connected. Getting target entity ...');
-                telegramClient = client;
-                telegramClient.setParseMode('html');
-                getTelegramTargetEntity()
-                  .then((entity) => {
-                    logInfo('Telegram target entity is found. ');
-                    targetEntity = entity;
-                    startCheckGroupTendency();
-                  })
-                  .catch((error) => {
-                    logError(`Telegram target peer error: ${error}`);
-                    gracefulExit();
-                  });
-              })
-              .catch((error) => {
-                logError(`Telegram client error: ${error}`);
-                gracefulExit();
-              });
-          })
-          .catch((error) => {
-            logError(`Error: ${error}`);
-            gracefulExit();
-          });
-      })
-      .catch((error) => {
-        logError(`Error: ${error}`);
-        gracefulExit();
-      });
-  }
+readStreetsRenames().then(() => {
+  readWrongGroups().then(() => {
+    if (options.noTelegram === true) {
+      startCheckGroupTendency();
+    } else {
+      logInfo('Starting Telegram client...');
+      getAPIAttributes()
+        .then(() => {
+          getMessageTargetIds()
+            .then(() => {
+              getTelegramClient()
+                .then((client) => {
+                  logInfo('Telegram client is connected. Getting target entity ...');
+                  telegramClient = client;
+                  telegramClient.setParseMode('html');
+                  getTelegramTargetEntity()
+                    .then((entity) => {
+                      logInfo('Telegram target entity is found. ');
+                      targetEntity = entity;
+                      startCheckGroupTendency();
+                    })
+                    .catch((error) => {
+                      logError(`Telegram target peer error: ${error}`);
+                      gracefulExit();
+                    });
+                })
+                .catch((error) => {
+                  logError(`Telegram client error: ${error}`);
+                  gracefulExit();
+                });
+            })
+            .catch((error) => {
+              logError(`Error: ${error}`);
+              gracefulExit();
+            });
+        })
+        .catch((error) => {
+          logError(`Error: ${error}`);
+          gracefulExit();
+        });
+    }
+  });
 });
