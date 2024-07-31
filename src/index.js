@@ -445,29 +445,33 @@ function checkGroupTendency() {
       stats.off = groupDataOff.length;
       stats.total = stats.on + stats.off;
       stats.percentage = stats.total > 0 ? Math.round((stats.on / stats.total) * 100) : 0;
-      logDebug(
-        `For group ${groupId} - "on" percentage is ${stats.percentage}%, the other statistics are: ${stats.on} "on", ${stats.off} "off", ${stats.total} total`,
-      );
-      statsBuffer.push(stats);
-      if (statsBuffer.length > statsBufferMaxLength) {
-        statsBuffer.shift();
-      }
-      const statsToCompare = statsBuffer.find((item) => item.timeStamp.getTime() >= dateBack.getTime());
-      if (statsToCompare !== undefined) {
-        const percentageDelta = Math.abs(stats.percentage - statsToCompare.percentage);
-        if (percentageDelta >= options.valueStep) {
-          if (stats.percentage > statsToCompare.percentage) {
-            if (tendency !== tendencyOn) {
-              tendency = tendencyOn;
-              telegramMessageOnChange(true);
-            }
-          } else {
-            if (tendency !== tendencyOff) {
-              tendency = tendencyOff;
-              telegramMessageOnChange(false);
+      if (stats.total !== 0) {
+        logDebug(
+          `For group ${groupId} - "on" percentage is ${stats.percentage}%, the other statistics are: ${stats.on} "on", ${stats.off} "off", ${stats.total} total`,
+        );
+        statsBuffer.push(stats);
+        if (statsBuffer.length > statsBufferMaxLength) {
+          statsBuffer.shift();
+        }
+        const statsToCompare = statsBuffer.find((item) => item.timeStamp.getTime() >= dateBack.getTime());
+        if (statsToCompare !== undefined) {
+          const percentageDelta = Math.abs(stats.percentage - statsToCompare.percentage);
+          if (percentageDelta >= options.valueStep) {
+            if (stats.percentage > statsToCompare.percentage) {
+              if (tendency !== tendencyOn) {
+                tendency = tendencyOn;
+                telegramMessageOnChange(true);
+              }
+            } else {
+              if (tendency !== tendencyOff) {
+                tendency = tendencyOff;
+                telegramMessageOnChange(false);
+              }
             }
           }
         }
+      } else {
+        logWarning(`No data found for group ${groupId}!`);
       }
     } else {
       logWarning('No data received from SvitloBot API!');
