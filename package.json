@@ -1,6 +1,6 @@
 {
   "name": "svitlobot-monitor",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "description": "A script to monitor the https://svitlobot.in.ua data and send alerts if the electricity is going up or down in selected group.",
   "main": "src/index.js",
   "keywords": [
@@ -24,7 +24,9 @@
     "yargs": "^17.7.2"
   },
   "scripts": {
-    "version": "genversion src/version.js --property name,version",
+    "preversion": "genversion src/version.js --property name,version",
+    "tag" : "git tag -a v$npm_package_version -m \"Version $npm_package_version\"",
+    "tag-push" : "git push origin --tags",
     "lint": "eslint .",
     "start": "node src/index.js",
     "debug": "node src/index.js --debug",
@@ -33,8 +35,6 @@
   "devDependencies": {
     "@babel/core": "^7.24.9",
     "@babel/eslint-parser": "^7.24.8",
-    "@eslint/js": "^9.5.0",
-    "eslint": "^9.7.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-sonarjs": "^1.0.4",
     "genversion": "^3.2.0",

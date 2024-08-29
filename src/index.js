@@ -49,18 +49,30 @@ const options = yargs
     default: 1,
     demandOption: false,
   })
-  .option('i', {
-    alias: 'time-interval',
-    describe: 'Time interval in minutes, to detect the tendency',
-    type: 'number',
-    default: 2,
+  .option('s', {
+    alias: 'step-interval-pair',
+    describe: 'Value step in percentage and time interval in minutes, to detect the tendency. Format is "percentage:time"',
+    type: 'array',
     demandOption: false,
   })
-  .option('s', {
-    alias: 'value-step',
-    describe: 'Value step in percentage, to detect the tendency',
+  .option('max', {
+    alias: 'max-percentage-to-react-down',
+    describe: 'Value in percentage, to react on decrease of percentage',
     type: 'number',
-    default: 5,
+    default: 80,
+    demandOption: false,
+  })
+  .option('min', {
+    alias: 'min-percentage-to-react-up',
+    describe: 'Value in percentage, to react on increase of percentage',
+    type: 'number',
+    default: 30,
+    demandOption: false,
+  })
+  .option('period-of-fixed-tendency', {
+    describe: 'Period in minutes, when the tendency is fixed',
+    type: 'number',
+    default: 60,
     demandOption: false,
   })
   .option('r', {
@@ -137,14 +149,43 @@ const storeSession = new StoreSession(`data/session/${options.asBot ? 'bot' : 'u
   cityId = 'Київ ->',
   groupId = `Київ -> Група ${options.group}`,
   statsBuffer = [],
-  statsBufferMaxLength = 60,
   tendencyOn = 'on',
   tendencyOff = 'off',
   timeInterval = (options.timeInterval * 60 + 1) * 1000,
-  refreshInterval = options.refreshInterval * 60 * 1000;
+  refreshInterval = options.refreshInterval * 60 * 1000,
+  tendencyPeriod = options.periodOfFixedTendency * 60 * 1000;
 let telegramClient = null,
+  stepIntervalPairs = [],
+  intervalMax = options.refreshInterval,
+  statsBufferMaxLength = 10,
   wrongGroups = [],
-  tendency = '';
+  tendency = '',
+  tendencyTime = new Date();
+
+if (Array.isArray(options.stepIntervalPair) && options.stepIntervalPair.length > 0) {
+  stepIntervalPairs = options.stepIntervalPair.map((pair) => {
+    const items = pair.split(':');
+    if (items.length === 2) {
+      const valueDelta = parseInt(items[0]),
+        timeInterval = parseInt(items[1]);
+      if (timeInterval > intervalMax) {
+        intervalMax = timeInterval;
+      }
+      return {valueDelta, timeInterval: timeInterval * 60 * 1000};
+    } else {
+      return null;
+    }
+  }).filter((item) => item !== null).sort((a, b) => a.timeInterval - b.timeInterval);
+} else {
+  stepIntervalPairs.push({percentage: 5, timeInterval: options.refreshInterval * 60 * 1000});
+}
+statsBufferMaxLength = intervalMax / options.refreshInterval;
+logInfo(`Group ID: ${options.group}`);
+logInfo(`Refresh interval: ${options.refreshInterval} minutes`);
+logInfo(`Step interval pairs: ${stringify(stepIntervalPairs)}`);
+logInfo(`Period of fixed tendency: ${options.periodOfFixedTendency} minutes`);
+logInfo(`Max percentage to react down: ${options.maxPercentageToReactDown}%`);
+logInfo(`Min percentage to react up: ${options.minPercentageToReactUp}%`);
 
 function getAPIAttributes() {
   return new Promise((resolve, reject) => {
@@ -362,6 +403,8 @@ function telegramMessageOnChange(startedSwitchingOn) {
     telegramMessage = {
       message: `${options.addTimestamp ? timeStamp + ': ' : ''}${message}`,
     };
+
+  logInfo(`${telegramMessage.message}`);
   if (telegramClient !== null) {
     if (telegramTopicId > 0) {
       telegramMessage.replyTo = telegramTopicId;
@@ -393,8 +436,6 @@ function telegramMessageOnChange(startedSwitchingOn) {
       .catch((error) => {
         logError(`Telegram message error: ${error}`);
       });
-  } else {
-    logInfo(`${telegramMessage.message}`);
   }
 }
 
@@ -440,7 +481,7 @@ function checkGroupTendency() {
       });
       const groupDataOn = dataClean(groupData.filter((item) => item.on === true)),
         groupDataOff = dataClean(groupData.filter((item) => item.on === false)),
-        dateBack = new Date(new Date().getTime() - timeInterval);
+        timeForDateBack = new Date().getTime();
       stats.on = groupDataOn.length;
       stats.off = groupDataOff.length;
       stats.total = stats.on + stats.off;
@@ -450,25 +491,38 @@ function checkGroupTendency() {
           `For group ${groupId} - "on" percentage is ${stats.percentage}%, the other statistics are: ${stats.on} "on", ${stats.off} "off", ${stats.total} total`,
         );
         statsBuffer.push(stats);
-        if (statsBuffer.length > statsBufferMaxLength) {
-          statsBuffer.shift();
+        if (tendency !== '' && new Date(timeForDateBack - tendencyPeriod).getTime() > tendencyTime.getTime()) {
+          tendency = '';
         }
-        const statsToCompare = statsBuffer.find((item) => item.timeStamp.getTime() >= dateBack.getTime());
-        if (statsToCompare !== undefined) {
-          const percentageDelta = Math.abs(stats.percentage - statsToCompare.percentage);
-          if (percentageDelta >= options.valueStep) {
-            if (stats.percentage > statsToCompare.percentage) {
-              if (tendency !== tendencyOn) {
-                tendency = tendencyOn;
-                telegramMessageOnChange(true);
-              }
-            } else {
-              if (tendency !== tendencyOff) {
-                tendency = tendencyOff;
-                telegramMessageOnChange(false);
+        if (stats.percentage >= options.minPercentageToReactUp && stats.percentage <= options.maxPercentageToReactDown) {
+          stepIntervalPairs.some((pair) => {
+            let result = false;
+            const dateBack = new Date(timeForDateBack - pair.timeInterval);
+              statsToCompare = statsBuffer.find((item) => item.timeStamp.getTime() >= dateBack.getTime());
+            if (statsToCompare !== undefined) {
+              const percentageDelta = Math.abs(stats.percentage - statsToCompare.percentage);
+              if (percentageDelta >= pair.valueDelta) {
+                if (stats.percentage > statsToCompare.percentage) {
+                  if (tendency !== tendencyOn) {
+                    tendency = tendencyOn;
+                    tendencyTime = new Date();
+                    telegramMessageOnChange(true);
+                  }
+                } else {
+                  if (tendency !== tendencyOff || statsToCompare.percentage < options.maxPercentageToReactUp) {
+                    tendency = tendencyOff;
+                    tendencyTime = new Date();
+                    telegramMessageOnChange(false);
+                  }
+                }
+                result = true;
               }
             }
-          }
+            return result;
+          });
+        }
+        if (statsBuffer.length > statsBufferMaxLength + 1) {
+          statsBuffer.shift();
         }
       } else {
         logWarning(`No data found for group ${groupId}!`);
