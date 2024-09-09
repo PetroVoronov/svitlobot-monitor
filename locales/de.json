@@ -1,1 +1,4 @@
-{}
+{
+    "Group %s - switching to on is started": "💡 %s - Einschalten wird gestartet!",
+    "Group %s - switching to off is started": "🕯 %s - Ausschalten wird gestartet!"
+}

@@ -331,49 +331,95 @@ function getTelegramClient() {
 
 function getTelegramTargetEntity() {
   return new Promise((resolve, reject) => {
-    telegramClient
-      .getDialogs()
-      .then((dialogs) => {
-        const availableDialogs = dialogs.filter((dialog) => dialog.entity?.migratedTo === undefined || dialog.entity?.migratedTo === null),
-          targetDialog = availableDialogs.find((item) => `${telegramChatId}` === `${item.entity.id}`);
-        if (targetDialog !== undefined) {
-          if (telegramTopicId > 0) {
-            telegramClient
-              .invoke(
-                new Api.channels.GetForumTopics({
-                  channel: targetDialog.entity,
-                  limit: 100,
-                  offsetId: 0,
-                  offsetDate: 0,
-                  addOffset: 0,
-                }),
-              )
-              .then((response) => {
-                if (Array.isArray(response.topics) && response.topics.length > 0) {
-                  if (response.topics.find((topic) => topic.id === telegramTopicId) === undefined) {
-                    logWarning(`Topic with id ${telegramTopicId} not found in ${targetDialog.title} (${telegramChatId})!`);
-                    reject(new Error(`Topic with id ${telegramTopicId} not found in ${targetDialog.title} (${telegramChatId})!`));
-                  } else {
-                    resolve(targetDialog.entity);
-                  }
-                } else {
-                  logWarning(`No topics found in ${targetDialog.title} (${telegramChatId})!`);
-                  reject(new Error(`No topics found in ${targetDialog.title} (${telegramChatId})!`));
-                }
-              })
-              .catch((error) => {
-                reject(error);
-              });
+    if (chatId > 0 && topicId === 0) {
+      telegramClient
+        .invoke(new Api.users.GetUsers({id: [chatId]}))
+        .then((result) => {
+          if (result.length > 0) {
+            const entity = result[0];
+            logDebug(`Telegram user ${entity.firstName} ${entity.lastName} '${entity.username}' (${chatId}) found!`);
+            resolve(entity);
           } else {
-            resolve(targetDialog.entity);
+            throw new Error(`Telegram user with ID ${chatId} not found!`);
           }
-        } else {
-          reject(new Error(`Telegram chat with ID ${telegramChatId} not found`));
-        }
-      })
-      .catch((error) => {
-        reject(error);
-      });
+        })
+        .catch((error) => {
+          logWarning(`Telegram chat with ID ${chatId} not found! Error: ${error}`);
+          reject(error);
+        });
+    } else if (chatId < 0 && chatId > -1000000000000 && topicId === 0) {
+      telegramClient
+        .invoke(new Api.messages.GetChats({id: [-chatId]}))
+        .then((result) => {
+          if (result.chats.length > 0) {
+            const entity = result.chats[0];
+            logDebug(`Telegram chat/group ${entity.title} (${chatId}) found!`);
+            resolve(entity);
+          } else {
+            throw new Error(`Telegram chat/group with ID ${chatId} not found!`);
+          }
+        })
+        .catch((error) => {
+          logWarning(`Telegram chat/group with ID ${chatId} not found! Error: ${error}`);
+          reject(error);
+        });
+    } else if (chatId < -1000000000000) {
+      telegramClient
+        .invoke(new Api.channels.GetChannels({id: [chatId]}))
+        .then((result) => {
+          if (result.chats.length > 0) {
+            const entity = result.chats[0];
+            if (topicId === 0) {
+              logDebug(`Telegram forum/channel ${entity.title} (${chatId}) found!`);
+              resolve(entity);
+            } else if (topicId > 0 && (entity.megagroup === true || entity.forum === true)) {
+              if (options.asBot === true) {
+                logWarning(`Telegram bot can't check if forum/channel topics is exists!`);
+                resolve(entity);
+              } else {
+                telegramClient
+                  .invoke(
+                    new Api.channels.GetForumTopics({
+                      channel: entity,
+                      limit: 100,
+                      offsetId: 0,
+                      offsetDate: 0,
+                      addOffset: 0,
+                    }),
+                  )
+                  .then((response) => {
+                    if (Array.isArray(response.topics) && response.topics.length > 0) {
+                      const topic = response.topics.find((topic) => topic.id === topicId);
+                      if (topic === undefined) {
+                        throw new Error(`Topic with id ${topicId} not found in ${entity.title} (${chatId})!`);
+                      } else {
+                        logDebug(`Telegram forum/channel ${entity.title} (${chatId})  with topic ${topic.title} (${topicId}) found!`);
+                        resolve(entity);
+                      }
+                    } else {
+                      throw new Error(`No topics found in ${entity.title} (${chatId})!`);
+                    }
+                  })
+                  .catch((error) => {
+                    reject(error);
+                  });
+              }
+            } else {
+              throw new Error(`Telegram forum/channel with ID ${chatId} is not a forum/channel!`);
+            }
+          } else {
+            throw new Error(`Telegram forum/channel with ID ${chatId} not found!`);
+          }
+        })
+        .catch((error) => {
+          logWarning(`Telegram forum/channel with ID ${chatId} not found! Error: ${error}`);
+          reject(error);
+        });
+    } else {
+      const errorMessage = `Telegram chat with ID ${chatId} not found!`;
+      logWarning(errorMessage);
+      reject(new Error(errorMessage));
+    }
   });
 }
 
