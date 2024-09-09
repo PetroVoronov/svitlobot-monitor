@@ -55,7 +55,7 @@ docker pull petrovoronov/svitlobot-monitor
         ```
 
 ## Passing the basic configuration parameters
-Basic configuration parameters, including Ecoflow and Telegram credentials can be passed as environment variables:
+Basic configuration parameters, including Telegram credentials can be passed as environment variables:
 
 ```sh
 export TELEGRAM_API_ID=your_telegram_api_id

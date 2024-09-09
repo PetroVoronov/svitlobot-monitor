@@ -15,7 +15,9 @@
         "preversion",
         "sonarjs",
         "svitlobot",
-        "Voronov"
+        "Svtilobot",
+        "Voronov",
+        "Обов’язковий"
     ],
     "ignoreWords": [],
     "import": []
