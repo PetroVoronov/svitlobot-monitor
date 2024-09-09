@@ -331,48 +331,48 @@ function getTelegramClient() {
 
 function getTelegramTargetEntity() {
   return new Promise((resolve, reject) => {
-    if (chatId > 0 && topicId === 0) {
+    if (telegramChatId > 0 && telegramTopicId === 0) {
       telegramClient
-        .invoke(new Api.users.GetUsers({id: [chatId]}))
+        .invoke(new Api.users.GetUsers({id: [telegramChatId]}))
         .then((result) => {
           if (result.length > 0) {
             const entity = result[0];
-            logDebug(`Telegram user ${entity.firstName} ${entity.lastName} '${entity.username}' (${chatId}) found!`);
+            logDebug(`Telegram user ${entity.firstName} ${entity.lastName} '${entity.username}' (${telegramChatId}) found!`);
             resolve(entity);
           } else {
-            throw new Error(`Telegram user with ID ${chatId} not found!`);
+            throw new Error(`Telegram user with ID ${telegramChatId} not found!`);
           }
         })
         .catch((error) => {
-          logWarning(`Telegram chat with ID ${chatId} not found! Error: ${error}`);
+          logWarning(`Telegram chat with ID ${telegramChatId} not found! Error: ${error}`);
           reject(error);
         });
-    } else if (chatId < 0 && chatId > -1000000000000 && topicId === 0) {
+    } else if (telegramChatId < 0 && telegramChatId > -1000000000000 && telegramTopicId === 0) {
       telegramClient
-        .invoke(new Api.messages.GetChats({id: [-chatId]}))
+        .invoke(new Api.messages.GetChats({id: [-telegramChatId]}))
         .then((result) => {
           if (result.chats.length > 0) {
             const entity = result.chats[0];
-            logDebug(`Telegram chat/group ${entity.title} (${chatId}) found!`);
+            logDebug(`Telegram chat/group ${entity.title} (${telegramChatId}) found!`);
             resolve(entity);
           } else {
-            throw new Error(`Telegram chat/group with ID ${chatId} not found!`);
+            throw new Error(`Telegram chat/group with ID ${telegramChatId} not found!`);
           }
         })
         .catch((error) => {
-          logWarning(`Telegram chat/group with ID ${chatId} not found! Error: ${error}`);
+          logWarning(`Telegram chat/group with ID ${telegramChatId} not found! Error: ${error}`);
           reject(error);
         });
-    } else if (chatId < -1000000000000) {
+    } else if (telegramChatId < -1000000000000) {
       telegramClient
-        .invoke(new Api.channels.GetChannels({id: [chatId]}))
+        .invoke(new Api.channels.GetChannels({id: [telegramChatId]}))
         .then((result) => {
           if (result.chats.length > 0) {
             const entity = result.chats[0];
-            if (topicId === 0) {
-              logDebug(`Telegram forum/channel ${entity.title} (${chatId}) found!`);
+            if (telegramTopicId === 0) {
+              logDebug(`Telegram forum/channel ${entity.title} (${telegramChatId}) found!`);
               resolve(entity);
-            } else if (topicId > 0 && (entity.megagroup === true || entity.forum === true)) {
+            } else if (telegramTopicId > 0 && (entity.megagroup === true || entity.forum === true)) {
               if (options.asBot === true) {
                 logWarning(`Telegram bot can't check if forum/channel topics is exists!`);
                 resolve(entity);
@@ -389,15 +389,15 @@ function getTelegramTargetEntity() {
                   )
                   .then((response) => {
                     if (Array.isArray(response.topics) && response.topics.length > 0) {
-                      const topic = response.topics.find((topic) => topic.id === topicId);
+                      const topic = response.topics.find((topic) => topic.id === telegramTopicId);
                       if (topic === undefined) {
-                        throw new Error(`Topic with id ${topicId} not found in ${entity.title} (${chatId})!`);
+                        throw new Error(`Topic with id ${telegramTopicId} not found in ${entity.title} (${telegramChatId})!`);
                       } else {
-                        logDebug(`Telegram forum/channel ${entity.title} (${chatId})  with topic ${topic.title} (${topicId}) found!`);
+                        logDebug(`Telegram forum/channel ${entity.title} (${telegramChatId})  with topic ${topic.title} (${telegramTopicId}) found!`);
                         resolve(entity);
                       }
                     } else {
-                      throw new Error(`No topics found in ${entity.title} (${chatId})!`);
+                      throw new Error(`No topics found in ${entity.title} (${telegramChatId})!`);
                     }
                   })
                   .catch((error) => {
@@ -405,18 +405,18 @@ function getTelegramTargetEntity() {
                   });
               }
             } else {
-              throw new Error(`Telegram forum/channel with ID ${chatId} is not a forum/channel!`);
+              throw new Error(`Telegram forum/channel with ID ${telegramChatId} is not a forum/channel!`);
             }
           } else {
-            throw new Error(`Telegram forum/channel with ID ${chatId} not found!`);
+            throw new Error(`Telegram forum/channel with ID ${telegramChatId} not found!`);
           }
         })
         .catch((error) => {
-          logWarning(`Telegram forum/channel with ID ${chatId} not found! Error: ${error}`);
+          logWarning(`Telegram forum/channel with ID ${telegramChatId} not found! Error: ${error}`);
           reject(error);
         });
     } else {
-      const errorMessage = `Telegram chat with ID ${chatId} not found!`;
+      const errorMessage = `Telegram chat with ID ${telegramChatId} not found!`;
       logWarning(errorMessage);
       reject(new Error(errorMessage));
     }
