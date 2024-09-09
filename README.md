@@ -216,9 +216,6 @@ services:
             - /path/to/your/data:/app/data
             - /path/to/your/locales:/app/locales
         environment:
-            - ECOFLOW_USERNAME=your_ecoflow_username
-            - ECOFLOW_PASSWORD=your_ecoflow_password
-            - ECOFLOW_DEVICE_SN=your_ecoflow_device_sn
             - TELEGRAM_API_ID=your_telegram_api_id
             - TELEGRAM_API_HASH=your_telegram_api_hash
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
