@@ -1,7 +1,12 @@
 ### Svitlobot Monitor
 
-![Версія зображення Docker](https://img.shields.io/docker/v/petrovoronov/svitlobot-monitor)
-![Ліцензія GitHub](https://img.shields.io/github/license/PetroVoronov/svitlobot-monitor)
+[![Docker Image Version](https://img.shields.io/docker/v/petrovoronov/svitlobot-monitor)](https://hub.docker.com/r/petrovoronov/svitlobot-monitor)
+[![Docker Pulls](https://img.shields.io/docker/pulls/petrovoronov/svitlobot-monitor)](https://hub.docker.com/r/petrovoronov/svitlobot-monitor)
+[![GitHub license](https://img.shields.io/github/license/PetroVoronov/svitlobot-monitor)](LICENSE)
+[![GitHub last commit](https://img.shields.io/github/last-commit/PetroVoronov/svitlobot-monitor)](https://github.com/PetroVoronov/svitlobot-monitor/commits/main)
+[![GitHub issues](https://img.shields.io/github/issues/PetroVoronov/svitlobot-monitor)](https://github.com/PetroVoronov/svitlobot-monitor/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/PetroVoronov/svitlobot-monitor)](https://github.com/PetroVoronov/svitlobot-monitor/pulls)
+
 
 ## Опис
 
