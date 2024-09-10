@@ -11,7 +11,8 @@
 
 ## About
 
-This project check the data from Svtilobot API and send the electricity switching on or off tendency indication for the appropriate group to the appropriate telegram user/chat/group/forum.
+This project check the data from Svtilobot API and send the electricity switching on or off tendency indication for the appropriate DTEK group to the appropriate telegram user/chat/group/forum.
+By using this application, you will be able to receive notifications about the start of power outages or restorations for your group before it happens to you.
 
 ## Features
 
