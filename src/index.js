@@ -22,7 +22,7 @@ const storage = new LocalStorage('data/storage'),
   });
 
 let telegramChatId = parseInt(process.env.TELEGRAM_CHAT_ID) || cache.getItem('telegramChatId') || 0,
-  telegramTopicId = parseInt(process.env.TELEGRAM_TOPIC_ID) || cache.getItem('telegramTopicId') || 0,
+  telegramTopicId = (process.env.TELEGRAM_TOPIC_ID ? parseInt(process.env.TELEGRAM_TOPIC_ID) : cache.getItem('telegramTopicId')) || 0,
   apiId = parseInt(process.env.TELEGRAM_API_ID) || cache.getItem('telegramApiId', 'number'),
   apiHash = process.env.TELEGRAM_API_HASH || cache.getItem('telegramApiHash'),
   botAuthToken = process.env.TELEGRAM_BOT_AUTH_TOKEN || cache.getItem('telegramBotAuthToken'),
@@ -164,21 +164,24 @@ let telegramClient = null,
   tendencyTime = new Date();
 
 if (Array.isArray(options.stepIntervalPair) && options.stepIntervalPair.length > 0) {
-  stepIntervalPairs = options.stepIntervalPair.map((pair) => {
-    const items = pair.split(':');
-    if (items.length === 2) {
-      const valueDelta = parseInt(items[0]),
-        timeInterval = parseInt(items[1]);
-      if (timeInterval > intervalMax) {
-        intervalMax = timeInterval;
+  stepIntervalPairs = options.stepIntervalPair
+    .map((pair) => {
+      const items = pair.split(':');
+      if (items.length === 2) {
+        const valueDelta = parseInt(items[0]),
+          timeInterval = parseInt(items[1]);
+        if (timeInterval > intervalMax) {
+          intervalMax = timeInterval;
+        }
+        return {valueDelta, timeInterval: timeInterval * 60 * 1000};
+      } else {
+        return null;
       }
-      return {valueDelta, timeInterval: timeInterval * 60 * 1000};
-    } else {
-      return null;
-    }
-  }).filter((item) => item !== null).sort((a, b) => a.timeInterval - b.timeInterval);
+    })
+    .filter((item) => item !== null)
+    .sort((a, b) => a.timeInterval - b.timeInterval);
 } else {
-  stepIntervalPairs.push({percentage: 5, timeInterval: options.refreshInterval * 60 * 1000});
+  stepIntervalPairs.push({valueDelta: 5, timeInterval: options.refreshInterval * 60 * 1000});
 }
 statsBufferMaxLength = intervalMax / options.refreshInterval;
 logInfo(`Group ID: ${options.group}`);
@@ -395,7 +398,9 @@ function getTelegramTargetEntity() {
                       if (topic === undefined) {
                         throw new Error(`Topic with id ${telegramTopicId} not found in ${entity.title} (${telegramChatId})!`);
                       } else {
-                        logDebug(`Telegram forum/channel ${entity.title} (${telegramChatId})  with topic ${topic.title} (${telegramTopicId}) found!`);
+                        logDebug(
+                          `Telegram forum/channel ${entity.title} (${telegramChatId})  with topic ${topic.title} (${telegramTopicId}) found!`,
+                        );
                         resolve(entity);
                       }
                     } else {
@@ -528,8 +533,7 @@ function checkGroupTendency() {
         }
       });
       const groupDataOn = dataClean(groupData.filter((item) => item.on === true)),
-        groupDataOff = dataClean(groupData.filter((item) => item.on === false)),
-        timeForDateBack = new Date().getTime();
+        groupDataOff = dataClean(groupData.filter((item) => item.on === false));
       stats.on = groupDataOn.length;
       stats.off = groupDataOff.length;
       stats.total = stats.on + stats.off;
@@ -538,35 +542,33 @@ function checkGroupTendency() {
         logDebug(
           `For group ${groupId} - "on" percentage is ${stats.percentage}%, the other statistics are: ${stats.on} "on", ${stats.off} "off", ${stats.total} total`,
         );
-        statsBuffer.push(stats);
         if (tendency !== '' && new Date(timeForDateBack - tendencyPeriod).getTime() > tendencyTime.getTime()) {
           tendency = '';
         }
-        if (stats.percentage >= options.minPercentageToReactUp && stats.percentage <= options.maxPercentageToReactDown) {
-          stepIntervalPairs.some((pair) => {
-            let result = false;
-            const dateBack = new Date(timeForDateBack - pair.timeInterval),
-              statsToCompare = statsBuffer.find((item) => item.timeStamp.getTime() >= dateBack.getTime());
-            if (statsToCompare !== undefined) {
-              const percentageDelta = Math.abs(stats.percentage - statsToCompare.percentage);
-              if (percentageDelta >= pair.valueDelta) {
-                if (stats.percentage > statsToCompare.percentage) {
-                  if (tendency !== tendencyOn) {
-                    tendency = tendencyOn;
-                    tendencyTime = new Date();
-                    telegramMessageOnChange(true);
-                  }
-                } else if (tendency !== tendencyOff || statsToCompare.percentage < options.maxPercentageToReactUp) {
-                  tendency = tendencyOff;
-                  tendencyTime = new Date();
-                  telegramMessageOnChange(false);
-                }
-                result = true;
+        const timeForDateBack = new Date().getTime();
+        stepIntervalPairs.some((pair) => {
+          let result = false;
+          const dateBack = new Date(timeForDateBack - pair.timeInterval * 1.01),
+            statsToCompare = statsBuffer.find((item) => item.timeStamp.getTime() >= dateBack.getTime());
+          if (statsToCompare !== undefined) {
+            const percentageDelta = stats.percentage - statsToCompare.percentage,
+              percentageDeltaAbs = Math.abs(percentageDelta);
+            if (percentageDeltaAbs >= pair.valueDelta) {
+              if (tendency !== tendencyOn && percentageDelta > 0 && stats.percentage >= options.minPercentageToReactUp) {
+                tendency = tendencyOn;
+                tendencyTime = new Date();
+                telegramMessageOnChange(true);
+              } else if (tendency !== tendencyOff && percentageDelta < 0 && stats.percentage <= options.maxPercentageToReactDown) {
+                tendency = tendencyOff;
+                tendencyTime = new Date();
+                telegramMessageOnChange(false);
               }
+              result = true;
             }
-            return result;
-          });
-        }
+          }
+          return result;
+        });
+        statsBuffer.push(stats);
         if (statsBuffer.length > statsBufferMaxLength + 1) {
           statsBuffer.shift();
         }
