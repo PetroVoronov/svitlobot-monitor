@@ -25,7 +25,8 @@ let telegramChatId = parseInt(process.env.TELEGRAM_CHAT_ID) || cache.getItem('te
   telegramTopicId = parseInt(process.env.TELEGRAM_TOPIC_ID) || cache.getItem('telegramTopicId') || 0,
   apiId = parseInt(process.env.TELEGRAM_API_ID) || cache.getItem('telegramApiId', 'number'),
   apiHash = process.env.TELEGRAM_API_HASH || cache.getItem('telegramApiHash'),
-  botAuthToken = process.env.TELEGRAM_BOT_AUTH_TOKEN || cache.getItem('telegramBotAuthToken');
+  botAuthToken = process.env.TELEGRAM_BOT_AUTH_TOKEN || cache.getItem('telegramBotAuthToken'),
+  targetEntity = null;
 
 if (apiId) cache.setItem('telegramApiId', apiId);
 if (apiHash) cache.setItem('telegramApiHash', apiHash);
@@ -70,7 +71,7 @@ const options = yargs
     demandOption: false,
   })
   .option('period-of-fixed-tendency', {
-    describe: 'Period in minutes, when the tendency is fixed',
+    describe: 'Period in minutes, when the tendency is usually not changed on opposite',
     type: 'number',
     default: 60,
     demandOption: false,
@@ -389,6 +390,7 @@ function getTelegramTargetEntity() {
                   )
                   .then((response) => {
                     if (Array.isArray(response.topics) && response.topics.length > 0) {
+                      // eslint-disable-next-line sonarjs/no-nested-functions
                       const topic = response.topics.find((topic) => topic.id === telegramTopicId);
                       if (topic === undefined) {
                         throw new Error(`Topic with id ${telegramTopicId} not found in ${entity.title} (${telegramChatId})!`);
@@ -543,7 +545,7 @@ function checkGroupTendency() {
         if (stats.percentage >= options.minPercentageToReactUp && stats.percentage <= options.maxPercentageToReactDown) {
           stepIntervalPairs.some((pair) => {
             let result = false;
-            const dateBack = new Date(timeForDateBack - pair.timeInterval);
+            const dateBack = new Date(timeForDateBack - pair.timeInterval),
               statsToCompare = statsBuffer.find((item) => item.timeStamp.getTime() >= dateBack.getTime());
             if (statsToCompare !== undefined) {
               const percentageDelta = Math.abs(stats.percentage - statsToCompare.percentage);
@@ -554,12 +556,10 @@ function checkGroupTendency() {
                     tendencyTime = new Date();
                     telegramMessageOnChange(true);
                   }
-                } else {
-                  if (tendency !== tendencyOff || statsToCompare.percentage < options.maxPercentageToReactUp) {
-                    tendency = tendencyOff;
-                    tendencyTime = new Date();
-                    telegramMessageOnChange(false);
-                  }
+                } else if (tendency !== tendencyOff || statsToCompare.percentage < options.maxPercentageToReactUp) {
+                  tendency = tendencyOff;
+                  tendencyTime = new Date();
+                  telegramMessageOnChange(false);
                 }
                 result = true;
               }
@@ -620,11 +620,13 @@ readWrongGroups().then(() => {
                 telegramClient = client;
                 telegramClient.setParseMode('html');
                 getTelegramTargetEntity()
+                  // eslint-disable-next-line sonarjs/no-nested-functions
                   .then((entity) => {
                     logInfo('Telegram target entity is found. ');
                     targetEntity = entity;
                     startCheckGroupTendency();
                   })
+                  // eslint-disable-next-line sonarjs/no-nested-functions
                   .catch((error) => {
                     logError(`Telegram target peer error: ${error}`);
                     gracefulExit();

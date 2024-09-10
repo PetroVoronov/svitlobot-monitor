@@ -86,7 +86,7 @@ The script accepts various command-line parameters to customize its behavior. Be
 | `--step-interval-pair` | `-s` | Value step in percentage and time interval in minutes, to detect the tendency. Format is "percentage:time" | `array` | | No |
 | `--max-percentage-to-react-down` | `--max` | Value in percentage, to react on decrease of percentage | `number` | `80` | No |
 | `--min-percentage-to-react-up` | `--min` | Value in percentage, to react on increase of percentage | `number` | `30` | No |
-| `--period-of-fixed-tendency` | | Period in minutes, when the tendency is fixed | `number` | `60` | No |
+| `--period-of-fixed-tendency` | | Period in minutes, the tendency is usually not changed on opposite | `number` | `60` | No |
 | `--refresh-interval` | `-r` | Refresh interval in minutes, to get the data | `number` | `1` | No |
 | `--no-telegram` | `-n` | Start without Telegram client | `boolean` | | No |
 | `--as-bot` | `-b` | Start as bot instance | `boolean` | | No |
