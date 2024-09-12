@@ -105,9 +105,9 @@ The `--step-interval-pair` parameter accepts values in the format "percentage:ti
 - `--step-interval-pair 10:30`: This means a 10% change over a 30-minute interval.
 - `--step-interval-pair 15:60`: This means a 15% change over a 60-minute interval.
 
-You can specify multiple pairs by separating them with a comma:
+You can specify multiple pairs by separating them with a space. For example:
 
-- `--step-interval-pair 5:10,10:30,15:60`
+- `--step-interval-pair 5:10 10:30 15:60`
 
 This allows the script to detect tendencies based on different step and interval combinations.
 
