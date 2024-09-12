@@ -21,7 +21,7 @@
 ## Вимоги
 
 - Встановлений Node.js або Docker.
-- Telegram API ID та hash, токен бота (якщо сповіщення генеруватимуться ботом), ідентифікатор цільового користувача, чату, групи або форуму (включаючи topicId для форуму). Деталі про Telegram API можна знайти [тут](https://core.telegram.org/api/obtaining_api_id).
+- Telegram API ID та hash або токен Telegram Бота (якщо сповіщення генеруватимуться ботом), ідентифікатор цільового користувача, чату, групи або форуму (включаючи topicId для форуму). Деталі про Telegram API можна знайти [тут](https://core.telegram.org/api/obtaining_api_id).
 - Ідентифікатор цільового користувача Telegram, чату або групи/форуму і topicId для форуму (в іншому випадку має бути встановлено значення 0).
 
 ### Як отримати ідентифікатор чату в Telegram
@@ -55,17 +55,23 @@ docker pull petrovoronov/svitlobot-monitor
 
 ## Передача базових параметрів конфігурації
 
-Базові параметри конфігурації, включаючи облікові дані Telegram, можуть бути передані як змінні середовища:
+Базові параметри конфігурації, включаючи облікові дані Telegram, можуть бути передані як змінні середовища, або ви можете пропустити це, і програма запросить вас ввести їх інтерактивно.
 
+### Змінні середовища у разі роботи як користувач Telegram (за замовчуванням):
 ```sh
 export TELEGRAM_API_ID=your_telegram_api_id
 export TELEGRAM_API_HASH=your_telegram_api_hash
-export TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
 export TELEGRAM_CHAT_ID=your_telegram_chat_id
 export TELEGRAM_TOPIC_ID=your_telegram_topic_id
 ```
 
-Або ви можете пропустити це, і програма запросить вас ввести їх інтерактивно.
+### Змінні середовища у разі роботи як бот Telegram:
+
+```sh
+export TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
+export TELEGRAM_CHAT_ID=your_telegram_chat_id
+export TELEGRAM_TOPIC_ID=your_telegram_topic_id
+```
 
 Після першого запуску ці параметри будуть збережені в каталозі `data/storage` і будуть використовуватися для наступних запусків. Таким чином, вам буде запропоновано ввести параметри лише один раз (або ви повинні передати їх як змінні середовища тільки під час першого запуску).
 
@@ -180,8 +186,6 @@ node index.js --language uk --group 2 --refresh-interval 5 --as-bot --pin-messag
     docker run -d --name svitlobot-monitor \
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
-        -e TELEGRAM_API_ID=your_telegram_api_id \
-        -e TELEGRAM_API_HASH=your_telegram_api_hash \
         -e TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token \
         -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
         -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
@@ -212,6 +216,8 @@ docker stop svitlobot-monitor
 
 Щоб запустити додаток за допомогою Docker Compose, створіть файл `docker-compose.yml` з наступним вмістом:
 
+### У разі роботи як користувач Telegram:
+
 ```yaml
 version: '3'
 services:
@@ -226,6 +232,23 @@ services:
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
             - TELEGRAM_TOPIC_ID=your_telegram_topic_id
         command: node src/index.js --language uk --group 2 --refresh-interval 5
+```
+
+### У разі роботи як бот Telegram:
+
+```yaml
+version: '3'
+services:
+    svitlobot-monitor:
+        image: petrovoronov/svitlobot-monitor:latest
+        volumes:
+            - /path/to/your/data:/app/data
+            - /path/to/your/locales:/app/locales
+        environment:
+            - TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
+            - TELEGRAM_CHAT_ID=your_telegram_chat_id
+            - TELEGRAM_TOPIC_ID=your_telegram_topic_id
+        command: node src/index.js --as-bot --language uk --group 2 --refresh-interval 5
 ```
 
 Замініть `/path/to/your/data` та `/path/to/your/locales` на реальні шляхи у вашій системі, де ви хочете зберігати дані програми та файли локалізації.
