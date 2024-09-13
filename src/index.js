@@ -259,7 +259,7 @@ function getBotAuthToken() {
 
 function getMessageTargetIds() {
   return new Promise((resolve, reject) => {
-    if (typeof telegramChatId !== 'number' || telegramChatId !== 0 || typeof telegramTopicId !== 'number') {
+    if (typeof telegramChatId !== 'number' || telegramChatId === 0 || typeof telegramTopicId !== 'number') {
       const rl = readline.createInterface({
         input,
         output,
