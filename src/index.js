@@ -66,11 +66,13 @@ const options = yargs
     alias: 'no-telegram',
     describe: 'Start without Telegram client',
     type: 'boolean',
+    default: false,
     demandOption: false,
   })
   .option('as-user', {
     describe: 'Start as user instance (bot instance by default)',
     type: 'boolean',
+    default: false,
     demandOption: false,
   })
   .option('p', {
@@ -105,6 +107,7 @@ const options = yargs
     alias: 'debug',
     describe: 'Debug level of logging',
     type: 'boolean',
+    default: false,
     demandOption: false,
   })
   .option('w', {
