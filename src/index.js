@@ -192,6 +192,7 @@ if (Array.isArray(options.stepIntervalPair) && options.stepIntervalPair.length >
   stepIntervalPairs.push({valueDelta: 5, timeInterval: options.refreshInterval * 60 * 1000});
 }
 statsBufferMaxLength = intervalMax / options.refreshInterval;
+logInfo(`Starting ${scriptName} v${scriptVersion}`);
 logInfo(`Group ID: ${options.group}`);
 logInfo(`Refresh interval: ${options.refreshInterval} minutes`);
 logInfo(`Step interval pairs: ${stringify(stepIntervalPairs)}`);
