@@ -376,10 +376,10 @@ function telegramUserSessionMigrate() {
         logDebug(`Migrating user session file: user/${file} to ${newFile}`);
         fs.renameSync(`data/session/user/${file}`, `data/session/${newFile}`);
       });
-      logDebug('User session migrated successfully.');
+      logDebug('Old user session migrated successfully.');
       fs.rmdirSync('data/session/user');
     } else {
-      logDebug('User session not found. Nothing to migrate.');
+      logDebug('Old user session not found. Nothing to migrate.');
     }
   } catch (error) {
     if (error.syscall === 'stat' && error.code === 'ENOENT' && error.path === 'data/session/user') {
