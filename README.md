@@ -85,23 +85,23 @@ So you will be asked to enter the parameters only once (or you should pass it as
 
 The script accepts various command-line parameters to customize its behavior. Below is a list of the available options:
 
-| Option | Alias | Description | Type | Default | Required |
-|--------|-------|-------------|------|---------|----------|
-| `--language` | `-l` | Language code for i18n | `string` | `en` | No |
-| `--group` | `-g` | DTEK group id | `number` | `1` | No |
-| `--step-interval-pair` | `-s` | Value step in percentage and time interval in minutes, to detect the tendency. Format is "percentage:time" | `array` | | No |
+| Option                           |  Alias  | Description | Type | Default | Required |
+|----------------------------------|---------|-------------|------|---------|----------|
+| `--language`                     | `-l`    | Language code for i18n | `string` | `en` | No |
+| `--group`                        | `-g`    | DTEK group id | `number` | `1` | No |
+| `--step-interval-pair`           | `-s`    | Value step in percentage and time interval in minutes, to detect the tendency. Format is "percentage:time" | `array` | | No |
 | `--max-percentage-to-react-down` | `--max` | Value in percentage, to react on decrease of percentage | `number` | `80` | No |
-| `--min-percentage-to-react-up` | `--min` | Value in percentage, to react on increase of percentage | `number` | `30` | No |
-| `--period-of-fixed-tendency` | | Period in minutes, the tendency is usually not changed on opposite | `number` | `60` | No |
-| `--refresh-interval` | `-r` | Refresh interval in minutes, to get the data | `number` | `1` | No |
-| `--no-telegram` | `-n` | Start without Telegram client | `boolean` | | No |
-| `--as-user` | | Start as user instance (bot instance by default) | `boolean` | | No |
-| `--pin-message` | `-p` | Unpin message from chat | `boolean` | `false` | No |
-| `--unpin-previous` | `-u` | Pin message to chat | `boolean` | `false` | No |
-| `--add-timestamp` | `-t` | Add timestamp to message | `boolean` | `false` | No |
-| `--time-zone` | `-tz` | Time zone for timestamp | `string` | `process.env.TZ` or `''` | No |
-| `--debug` | `-d` | Debug level of logging | `boolean` | | No |
-| `--wrong-groups` | `-w` | File with wrong groups | `string` | `''` | No |
+| `--min-percentage-to-react-up`   | `--min` | Value in percentage, to react on increase of percentage | `number` | `30` | No |
+| `--period-of-fixed-tendency`     |         | Period in minutes, the tendency is usually not changed on opposite | `number` | `60` | No |
+| `--refresh-interval`             | `-r`    | Refresh interval in minutes, to get the data | `number` | `1` | No |
+| `--no-telegram`                  | `-n`    | Start without Telegram client | `boolean` | | No |
+| `--as-user`                      |         | Start as user instance (bot instance by default) | `boolean` | | No |
+| `--pin-message`                  | `-p`    | Unpin message from chat | `boolean` | `false` | No |
+| `--unpin-previous`               | `-u`    | Pin message to chat | `boolean` | `false` | No |
+| `--add-timestamp`                | `-t`    | Add timestamp to message | `boolean` | `false` | No |
+| `--time-zone`                    | `-tz`   | Time zone for timestamp | `string` | `process.env.TZ` or `''` | No |
+| `--wrong-groups`                 | `-w`    | File with wrong groups | `string` | `''` | No |
+| `--debug`                        | `-d`    | Debug level of logging | `boolean` | | No |
 
 #### Available Options for `--step-interval-pair`
 
