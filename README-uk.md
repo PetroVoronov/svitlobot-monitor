@@ -146,9 +146,11 @@ node index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-messa
 Додатково можна зіставити каталог локалізації з контейнером:
 - `/app/locales` — для файлів локалізації, якщо ви хочете використовувати власні повідомлення в чаті Telegram. Опціонально для зіставлення.
 
-#### Перший запуск Docker
+#### Перший запуск Docker для роботи як користувач Telegram або як бот Telegram для налаштування всіх основних параметрів конфігурації в інтерактивному режимі
 
-Отже, перший запуск повинен виглядати як один з наступних:
+Через специфіку середовища Docker, додаток не зможе запитати відсутні параметри конфігурації в інтерактивному режимі. Тому вам потрібно зробити перший запуск в інтерактивному режимі, щоб надати відсутні параметри.
+
+Отже, перший запуск повинен бути таким:
 
 - Для роботи як користувач Telegram та інтерактивного встановлення всіх основних параметрів конфігурації:
     ```sh
@@ -161,7 +163,7 @@ node index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-messa
 
 - Для роботи як користувач Telegram та встановлення всіх основних параметрів конфігурації як змінні середовища:
     ```sh
-    docker run -d --name svitlobot-monitor \
+    docker run -it --name svitlobot-monitor \
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         -e TELEGRAM_API_ID=your_telegram_api_id \
@@ -172,7 +174,7 @@ node index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-messa
         node src/index.js --as-user --language uk --group 2 --refresh-interval 5
     ```
 
-- Для роботи як бот Telegram та інтерактивного встановлення всіх основних параметрів конфігурації:
+- Для роботи як користувач Telegram і налаштування всіх основних параметрів конфігурації через змінні середовища (але інтерактивний режим все ще потрібен):
     ```sh
     docker run -it --name svitlobot-monitor \
         -v /path/to/your/data:/app/data \
@@ -181,17 +183,21 @@ node index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-messa
         node src/index.js --language uk --group 2 --refresh-interval 5
     ```
 
-- Для роботи як бот Telegram та встановлення всіх основних параметрів конфігурації як змінні середовища:
-    ```sh
-    docker run -d --name svitlobot-monitor \
-        -v /path/to/your/data:/app/data \
-        -v /path/to/your/locales:/app/locales \
-        -e TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token \
-        -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
-        -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
-        petrovoronov/svitlobot-monitor:latest \
-        node src/index.js --language uk --group 2 --refresh-interval 5
-    ```
+Після першого запуску додаток збереже параметри конфігурації та додаткову інформацію - будь ласка, зупиніть контейнер, натиснувши `Ctrl+C`, і запустіть його знову за допомогою команд з наступного розділу.
+
+#### Перший запуск Docker для роботи як бот Telegram і налаштування всіх основних параметрів конфігурації через змінні середовища
+
+Інтерактивний режим для роботи як бот Telegram не потрібен. Тому перший запуск повинен бути таким:
+```sh
+docker run -d --name svitlobot-monitor \
+    -v /path/to/your/data:/app/data \
+    -v /path/to/your/locales:/app/locales \
+    -e TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token \
+    -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
+    -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
+    petrovoronov/svitlobot-monitor:latest \
+    node src/index.js --language uk --group 2 --refresh-interval 5
+```
 **Важлива примітка: передайте всі пізніше необхідні параметри командного рядка під час першого запуску!**
 
 Після першого запуску додаток збереже параметри конфігурації та додаткову інформацію. Будь ласка, зупиніть контейнер, натиснувши `Ctrl+C`, і перезапустіть його за допомогою команд із наступного розділу.

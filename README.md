@@ -148,7 +148,9 @@ You can map in on any local directory on the host system or docker volume.
 Additionally, you can map the localization directory to the container:
 - `/app/locales` - for the localization files, if  you want to use own messages in the telegram chat. Optional for the mapping.
 
-#### Docker first run
+#### Docker first run to work as telegram user or as telegram bot to set all basic configuration parameters interactively
+
+Due to the specifics of the Docker environment, the application will not be able to ask for the missing configuration parameters interactively. That's why you need to make a first run in interactive mode to provide the missing parameters.
 
 So, the first run should be like one of the following:
 - to work as telegram user and set all basic configuration parameters interactively:
@@ -160,9 +162,9 @@ So, the first run should be like one of the following:
         node src/index.js --as-user --language uk --group 2 --refresh-interval 5
     ```
 
-- to work as telegram user and set all basic configuration parameters as environment variables:
+- to work as telegram user and set all basic configuration parameters as environment variables (but interactive mode still required):
     ```sh
-    docker run -d --name svitlobot-monitor \
+    docker run --it --name svitlobot-monitor \
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         -e TELEGRAM_API_ID=your_telegram_api_id \
@@ -182,6 +184,11 @@ So, the first run should be like one of the following:
         node src/index.js --language uk --group 2 --refresh-interval 5
     ```
 
+After the first run the application will store the configuration parameters and additional info - please stop the container by pressing `Ctrl+C` and start it again with the commands from the next section.
+
+#### Docker first run to work as telegram bot and set all basic configuration parameters via environment variables
+
+There is no interactive mode for the telegram bot instance is needed. So, the first run should be like one of the following:
 
 - to work as telegram bot and  all basic configuration parameters as environment variables:
     ```sh
@@ -195,8 +202,6 @@ So, the first run should be like one of the following:
         node src/index.js --language uk --group 2 --refresh-interval 5
     ```
 **Important notice: pass all later needed command-line options at first run!***
-
-After the first run the application will store the configuration parameters and additional info - please stop the container by pressing `Ctrl+C` and start it again with the commands from the next section.
 
 #### Docker next runs
 
