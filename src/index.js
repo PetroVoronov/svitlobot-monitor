@@ -350,7 +350,7 @@ function getTelegramClient() {
           reject(error);
         });
     } else {
-      if (process.env.TELEGRAM_BOT_AUTH_TOKEN === 'string' && process.env.TELEGRAM_BOT_AUTH_TOKEN.length >= botAuthTokenMinimumLength) {
+      if (typeof process.env.TELEGRAM_BOT_AUTH_TOKEN === 'string' && process.env.TELEGRAM_BOT_AUTH_TOKEN.length >= botAuthTokenMinimumLength) {
         cache.setItem('telegramBotAuthToken', process.env.TELEGRAM_BOT_AUTH_TOKEN);
       }
       getBotAuthToken()
