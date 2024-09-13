@@ -691,7 +691,6 @@ readWrongGroups().then(() => {
               .then((entity) => {
                 logInfo('Telegram target entity is found. ');
                 targetEntity = entity;
-                telegramMessageOnChange(true);
                 startCheckGroupTendency();
               })
               // eslint-disable-next-line sonarjs/no-nested-functions
