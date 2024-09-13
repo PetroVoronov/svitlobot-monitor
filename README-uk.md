@@ -93,7 +93,7 @@ export TELEGRAM_TOPIC_ID=your_telegram_topic_id
 | `--period-of-fixed-tendency` | | Період у хвилинах, коли тенденція звичайно не змінюється на протилежну | `число` | `60` | Ні |
 | `--refresh-interval` | `-r` | Інтервал оновлення в хвилинах для отримання даних | `число` | `1` | Ні |
 | `--no-telegram` | `-n` | Запуск без клієнта Telegram | `булевий` | | Ні |
-| `--as-bot` | `-b` | Запуск у якості екземпляра бота | `булевий` | | Ні |
+| `--as-user` | `-b` | Запуск у якості користувача (у якості бода - за замовчуванням) | `булевий` | | Ні |
 | `--pin-message` | `-p` | Закріпити повідомлення в чаті | `булевий` | `false` | Ні |
 | `--unpin-previous` | `-u` | Відкріпити попереднє повідомлення | `булевий` | `false` | Ні |
 | `--add-timestamp` | `-t` | Додати часову мітку до повідомлення | `булевий` | `false` | Ні |
@@ -128,7 +128,7 @@ node index.js --language uk --group 2 --refresh-interval 5 --debug
 Приклад з усіма можливими опціями командного рядка:
 
 ```sh
-node index.js --language uk --group 2 --refresh-interval 5 --as-bot --pin-message --unpin-previous --add-timestamp --time-zone "Europe/Kiev"
+node index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-message --unpin-previous --add-timestamp --time-zone "Europe/Kiev"
 ```
 
 ### Docker
@@ -156,7 +156,7 @@ node index.js --language uk --group 2 --refresh-interval 5 --as-bot --pin-messag
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         petrovoronov/svitlobot-monitor:latest \
-        node src/index.js --language uk --group 2 --refresh-interval 5
+        node src/index.js --as-user --language uk --group 2 --refresh-interval 5
     ```
 
 - Для роботи як користувач Telegram та встановлення всіх основних параметрів конфігурації як змінні середовища:
@@ -169,7 +169,7 @@ node index.js --language uk --group 2 --refresh-interval 5 --as-bot --pin-messag
         -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
         -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
         petrovoronov/svitlobot-monitor:latest \
-        node src/index.js --language uk --group 2 --refresh-interval 5
+        node src/index.js --as-user --language uk --group 2 --refresh-interval 5
     ```
 
 - Для роботи як бот Telegram та інтерактивного встановлення всіх основних параметрів конфігурації:
@@ -178,7 +178,7 @@ node index.js --language uk --group 2 --refresh-interval 5 --as-bot --pin-messag
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         petrovoronov/svitlobot-monitor:latest \
-        node src/index.js --as-bot --language uk --group 2 --refresh-interval 5
+        node src/index.js --language uk --group 2 --refresh-interval 5
     ```
 
 - Для роботи як бот Telegram та встановлення всіх основних параметрів конфігурації як змінні середовища:
@@ -190,7 +190,7 @@ node index.js --language uk --group 2 --refresh-interval 5 --as-bot --pin-messag
         -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
         -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
         petrovoronov/svitlobot-monitor:latest \
-        node src/index.js --as-bot --language uk --group 2 --refresh-interval 5
+        node src/index.js --language uk --group 2 --refresh-interval 5
     ```
 **Важлива примітка: передайте всі пізніше необхідні параметри командного рядка під час першого запуску!**
 
@@ -231,7 +231,7 @@ services:
             - TELEGRAM_API_HASH=your_telegram_api_hash
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
             - TELEGRAM_TOPIC_ID=your_telegram_topic_id
-        command: node src/index.js --language uk --group 2 --refresh-interval 5
+        command: node src/index.js --as-user --language uk --group 2 --refresh-interval 5
 ```
 
 ### У разі роботи як бот Telegram:
@@ -248,7 +248,7 @@ services:
             - TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
             - TELEGRAM_TOPIC_ID=your_telegram_topic_id
-        command: node src/index.js --as-bot --language uk --group 2 --refresh-interval 5
+        command: node src/index.js --language uk --group 2 --refresh-interval 5
 ```
 
 Замініть `/path/to/your/data` та `/path/to/your/locales` на реальні шляхи у вашій системі, де ви хочете зберігати дані програми та файли локалізації.

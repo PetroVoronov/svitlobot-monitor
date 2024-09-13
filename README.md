@@ -95,7 +95,7 @@ The script accepts various command-line parameters to customize its behavior. Be
 | `--period-of-fixed-tendency` | | Period in minutes, the tendency is usually not changed on opposite | `number` | `60` | No |
 | `--refresh-interval` | `-r` | Refresh interval in minutes, to get the data | `number` | `1` | No |
 | `--no-telegram` | `-n` | Start without Telegram client | `boolean` | | No |
-| `--as-bot` | `-b` | Start as bot instance | `boolean` | | No |
+| `--as-user` | `-u` | Start as user instance (bot instance by default) | `boolean` | | No |
 | `--pin-message` | `-p` | Unpin message from chat | `boolean` | `false` | No |
 | `--unpin-previous` | `-u` | Pin message to chat | `boolean` | `false` | No |
 | `--add-timestamp` | `-t` | Add timestamp to message | `boolean` | `false` | No |
@@ -130,7 +130,7 @@ node index.js --language uk --group 2 --refresh-interval 5 --debug
 There is an example with all possible command-line options:
 
 ```sh
-node index.js --language uk --group 2 --refresh-interval 5 --as-bot --pin-message --unpin-previous --add-timestamp --time-zone "Europe/Kiev"
+node index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-message --unpin-previous --add-timestamp --time-zone "Europe/Kiev"
 ```
 
 ### Docker
@@ -157,7 +157,7 @@ So, the first run should be like one of the following:
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         petrovoronov/svitlobot-monitor:latest \
-        node src/index.js --language uk --group 2 --refresh-interval 5
+        node src/index.js --as-user --language uk --group 2 --refresh-interval 5
     ```
 
 - to work as telegram user and set all basic configuration parameters as environment variables:
@@ -170,7 +170,7 @@ So, the first run should be like one of the following:
         -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
         -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
         petrovoronov/svitlobot-monitor:latest \
-        node src/index.js --language uk --group 2 --refresh-interval 5
+        node src/index.js --as-user --language uk --group 2 --refresh-interval 5
     ```
 
 - to work as telegram bot and set all basic configuration parameters interactively:
@@ -179,7 +179,7 @@ So, the first run should be like one of the following:
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         petrovoronov/svitlobot-monitor:latest \
-        node src/index.js --as-bot --language uk --group 2 --refresh-interval 5
+        node src/index.js --language uk --group 2 --refresh-interval 5
     ```
 
 
@@ -192,7 +192,7 @@ So, the first run should be like one of the following:
         -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
         -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
         petrovoronov/svitlobot-monitor:latest \
-        node src/index.js --as-bot --language uk --group 2 --refresh-interval 5
+        node src/index.js --language uk --group 2 --refresh-interval 5
     ```
 **Important notice: pass all later needed command-line options at first run!***
 
@@ -234,7 +234,7 @@ services:
             - TELEGRAM_API_HASH=your_telegram_api_hash
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
             - TELEGRAM_TOPIC_ID=your_telegram_topic_id
-        command: node src/index.js --language uk --group 2 --refresh-interval 5
+        command: node src/index.js --as-user --language uk --group 2 --refresh-interval 5
 ```
 
 ### In case of working as telegram bot:
@@ -252,7 +252,7 @@ services:
             - TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
             - TELEGRAM_TOPIC_ID=your_telegram_topic_id
-        command: node src/index.js --as-bot --language uk --group 2 --refresh-interval 5
+        command: node src/index.js --language uk --group 2 --refresh-interval 5
 ```
 
 Replace `/path/to/your/data` and `/path/to/your/locales` with the actual paths on your system where you want to store the application data and localization files.
