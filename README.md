@@ -95,7 +95,7 @@ The script accepts various command-line parameters to customize its behavior. Be
 | `--period-of-fixed-tendency` | | Period in minutes, the tendency is usually not changed on opposite | `number` | `60` | No |
 | `--refresh-interval` | `-r` | Refresh interval in minutes, to get the data | `number` | `1` | No |
 | `--no-telegram` | `-n` | Start without Telegram client | `boolean` | | No |
-| `--as-user` | `-u` | Start as user instance (bot instance by default) | `boolean` | | No |
+| `--as-user` | | Start as user instance (bot instance by default) | `boolean` | | No |
 | `--pin-message` | `-p` | Unpin message from chat | `boolean` | `false` | No |
 | `--unpin-previous` | `-u` | Pin message to chat | `boolean` | `false` | No |
 | `--add-timestamp` | `-t` | Add timestamp to message | `boolean` | `false` | No |

@@ -13,31 +13,6 @@ const i18n = require('./modules/i18n/i18n.config');
 const axios = require('axios');
 const fs = require('node:fs');
 
-const storage = new LocalStorage('data/storage');
-const cache = new Cache({
-  getItem: (key) => storage.getItem(key),
-  setItem: (key, value) => storage.setItem(key, value),
-  removeItem: (key) => storage.removeItem(key),
-});
-
-let telegramClient = null;
-
-const botAuthTokenMinimumLength = 43;
-
-if (typeof process.env.TELEGRAM_CHAT_ID === 'string' && process.env.TELEGRAM_CHAT_ID.length > 0) {
-  cache.setItem('telegramChatId', parseInt(process.env.TELEGRAM_CHAT_ID));
-}
-if (typeof process.env.TELEGRAM_TOPIC_ID === 'string' && process.env.TELEGRAM_TOPIC_ID.length > 0) {
-  cache.setItem('telegramTopicId', parseInt(process.env.TELEGRAM_TOPIC_ID));
-}
-let telegramChatId = cache.getItem('telegramChatId', 'number');
-let telegramTopicId = cache.getItem('telegramTopicId', 'number');
-
-let targetEntity = null;
-let targetTitle = '';
-
-const parseMode = 'html';
-
 const options = yargs
   .usage('Usage: $0 [options]')
   .option('l', {
@@ -93,8 +68,7 @@ const options = yargs
     type: 'boolean',
     demandOption: false,
   })
-  .option('u', {
-    alias: 'as-user',
+  .option('as-user', {
     describe: 'Start as user instance (bot instance by default)',
     type: 'boolean',
     demandOption: false,
@@ -148,6 +122,31 @@ const options = yargs
 setLogLevel(options.debug ? logLevelDebug : logLevelInfo);
 
 i18n.setLocale(options.language);
+
+const storage = new LocalStorage('data/storage');
+const cache = new Cache({
+  getItem: (key) => storage.getItem(key),
+  setItem: (key, value) => storage.setItem(key, value),
+  removeItem: (key) => storage.removeItem(key),
+});
+
+let telegramClient = null;
+
+const botAuthTokenMinimumLength = 43;
+
+if (typeof process.env.TELEGRAM_CHAT_ID === 'string' && process.env.TELEGRAM_CHAT_ID.length > 0) {
+  cache.setItem('telegramChatId', parseInt(process.env.TELEGRAM_CHAT_ID));
+}
+if (typeof process.env.TELEGRAM_TOPIC_ID === 'string' && process.env.TELEGRAM_TOPIC_ID.length > 0) {
+  cache.setItem('telegramTopicId', parseInt(process.env.TELEGRAM_TOPIC_ID));
+}
+let telegramChatId = cache.getItem('telegramChatId', 'number');
+let telegramTopicId = cache.getItem('telegramTopicId', 'number');
+
+let targetEntity = null;
+let targetTitle = '';
+
+const parseMode = 'html';
 
 const svitloBotAPI = 'https://api.svitlobot.in.ua/website/getChannelsForMap';
 const refreshInterval = options.refreshInterval * 60 * 1000;
@@ -260,7 +259,7 @@ function getBotAuthToken() {
 
 function getMessageTargetIds() {
   return new Promise((resolve, reject) => {
-    if (telegramChatId === null || telegramTopicId === null) {
+    if (typeof telegramChatId !== 'number' || telegramChatId !== 0 || typeof telegramTopicId !== 'number') {
       const rl = readline.createInterface({
         input,
         output,
@@ -296,7 +295,7 @@ function getMessageTargetIds() {
 function getTelegramClient() {
   return new Promise((resolve, reject) => {
     if (options.asUser === true) {
-      userSessionMigrate();
+      telegramUserSessionMigrate();
       const storeSession = new StoreSession(`data/session`);
       if (typeof process.env.TELEGRAM_API_ID === 'string' && process.env.TELEGRAM_API_ID.length > 0) {
         cache.setItem('telegramApiId', parseInt(process.env.TELEGRAM_API_ID));
@@ -361,6 +360,42 @@ function getTelegramClient() {
         });
     }
   });
+}
+
+function telegramUserSessionMigrate() {
+  let oldSessionsExists = false;
+  try {
+    if (fs.statSync('data/session/user').isDirectory() === true) {
+      oldSessionsExists = true;
+      fs.readdirSync('data/session/user').forEach((file) => {
+        const newFile = file.replace('%2Fuser', '');
+        logDebug(`Migrating user session file: user/${file} to ${newFile}`);
+        fs.renameSync(`data/session/user/${file}`, `data/session/${newFile}`);
+      });
+      logDebug('User session migrated successfully.');
+      fs.rmdirSync('data/session/user');
+    } else {
+      logDebug('User session not found. Nothing to migrate.');
+    }
+  } catch (error) {
+    if (error.syscall === 'stat' && error.code === 'ENOENT' && error.path === 'data/session/user') {
+      logDebug('User session not found. Nothing to migrate.');
+    } else {
+      logError(`Error migrating user session: ${error}`);
+      gracefulExit();
+    }
+  }
+  if (oldSessionsExists) {
+    try {
+      if (fs.statSync('data/session/bot').isDirectory() === true) {
+        fs.rmSync('data/session/bot', {recursive: true, force: true});
+      }
+    } catch (error) {
+      if (!(error.syscall === 'stat' && error.code === 'ENOENT' && error.path === 'data/session/bot')) {
+        logDebug(`Error removing bot session: ${error}`);
+      }
+    }
+  }
 }
 
 function getTelegramTargetEntity() {
@@ -436,43 +471,6 @@ function getTelegramTargetEntity() {
         });
     }
   });
-}
-
-function gracefulExit() {
-  if (telegramClient !== null && options.asUser === true && telegramClient.connected === true) {
-    telegramClient
-      .disconnect()
-      .then(() => {
-        logInfo(`Telegram client is disconnected!`);
-        telegramClient
-          .destroy()
-          .then(() => {
-            logInfo(`Telegram client is destroyed!`);
-            telegramClient = null;
-            exit(0);
-          })
-          .catch((error) => {
-            logError(`Telegram client - nothing to destroy!`);
-            exit(0);
-          });
-      })
-      .catch((error) => {
-        logError(`Telegram client is not connected!`);
-        exit(0);
-      });
-  } else if (telegramClient !== null && options.user === false) {
-    try {
-      telegramClient.stop();
-      logInfo(`Telegram bot is stopped!`);
-      // eslint-disable-next-line sonarjs/no-ignored-exceptions
-    } catch (error) {
-      logInfo(`Telegram bot is stopped!`);
-    }
-    exit(0);
-  } else {
-    logInfo('All clients are disconnected!');
-    exit(0);
-  }
 }
 
 function telegramMessageOnChange(startedSwitchingOn) {
@@ -672,6 +670,43 @@ function readWrongGroups() {
   });
 }
 
+function gracefulExit() {
+  if (telegramClient !== null && options.asUser === true && telegramClient.connected === true) {
+    telegramClient
+      .disconnect()
+      .then(() => {
+        logInfo(`Telegram client is disconnected!`);
+        telegramClient
+          .destroy()
+          .then(() => {
+            logInfo(`Telegram client is destroyed!`);
+            telegramClient = null;
+            exit(0);
+          })
+          .catch((error) => {
+            logError(`Telegram client - nothing to destroy!`);
+            exit(0);
+          });
+      })
+      .catch((error) => {
+        logError(`Telegram client is not connected!`);
+        exit(0);
+      });
+  } else if (telegramClient !== null && options.user === false) {
+    try {
+      telegramClient.stop();
+      logInfo(`Telegram bot is stopped!`);
+      // eslint-disable-next-line sonarjs/no-ignored-exceptions
+    } catch (error) {
+      logInfo(`Telegram bot is stopped!`);
+    }
+    exit(0);
+  } else {
+    logInfo('All clients are disconnected!');
+    exit(0);
+  }
+}
+
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
@@ -711,38 +746,3 @@ readWrongGroups().then(() => {
   }
 });
 
-function userSessionMigrate() {
-  let oldSessionsExists = false;
-  try {
-    if (fs.statSync('data/session/user').isDirectory() === true) {
-      oldSessionsExists = true;
-      fs.readdirSync('data/session/user').forEach((file) => {
-        const newFile = file.replace('%2Fuser', '');
-        logDebug(`Migrating user session file: user/${file} to ${newFile}`);
-        fs.renameSync(`data/session/user/${file}`, `data/session/${newFile}`);
-      });
-      logDebug('User session migrated successfully.');
-      fs.rmdirSync('data/session/user');
-    } else {
-      logDebug('User session not found. Nothing to migrate.');
-    }
-  } catch (error) {
-    if (error.syscall === 'stat' && error.code === 'ENOENT' && error.path === 'data/session/user') {
-      logDebug('User session not found. Nothing to migrate.');
-    } else {
-      logError(`Error migrating user session: ${error}`);
-      gracefulExit();
-    }
-  }
-  if (oldSessionsExists) {
-    try {
-      if (fs.statSync('data/session/bot').isDirectory() === true) {
-        fs.rmdirSync('data/session/bot', {force: true});
-      }
-    } catch (error) {
-      if (!(error.syscall === 'stat' && error.code === 'ENOENT' && error.path === 'data/session/bot')) {
-        logDebug(`Error removing bot session: ${error}`);
-      }
-    }
-  }
-}
