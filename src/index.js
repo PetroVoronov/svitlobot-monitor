@@ -372,7 +372,7 @@ function telegramUserSessionMigrate() {
     if (fs.statSync('data/session/user').isDirectory() === true) {
       oldSessionsExists = true;
       fs.readdirSync('data/session/user').forEach((file) => {
-        const newFile = file.replace('%2Fuser', '');
+        const newFile = file.replace('%2F' + 'user', '');
         logDebug(`Migrating user session file: user/${file} to ${newFile}`);
         fs.renameSync(`data/session/user/${file}`, `data/session/${newFile}`);
       });
