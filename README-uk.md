@@ -1,5 +1,6 @@
 ### Svitlobot Monitor
 
+[![GitHub release](https://img.shields.io/github/v/release/PetroVoronov/svitlobot-monitor)](https://github.com/PetroVoronov/svitlobot-monitor/releases)
 [![Docker Image Version](https://img.shields.io/docker/v/petrovoronov/svitlobot-monitor)](https://hub.docker.com/r/petrovoronov/svitlobot-monitor)
 [![Docker Pulls](https://img.shields.io/docker/pulls/petrovoronov/svitlobot-monitor)](https://hub.docker.com/r/petrovoronov/svitlobot-monitor)
 [![GitHub license](https://img.shields.io/github/license/PetroVoronov/svitlobot-monitor)](LICENSE)
