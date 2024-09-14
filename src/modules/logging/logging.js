@@ -1,78 +1,120 @@
-/** @module logging **/
-const strftime = require('strftime');
+const {Logger} = require('telegram/extensions/Logger');
+class SecuredLogger extends Logger {
+  maskCharactersVisible = 3;
+  maskWords = [
+    'token',
+    'secret',
+    'key',
+    'pass',
+    'pwd',
+    'auth',
+    'username',
+    'user',
+    'mail',
+    'login',
+    'credential',
+    'session',
+    'cookie',
+    'bearer',
+  ];
 
-const logLevelDebug = 0,
-  logLevelInfo = 1,
-  logLevelWarning = 2,
-  logLevelError = 3;
+  _log(level, message, color) {
+    if (this.canSend(level)) {
+      if (typeof message === 'string') {
+        super._log(level, message, color);
+      } else if (Array.isArray(message)) {
+        const messageText = message.reduce((acc, item) => {
+          return `${acc}${this.processMessageObject(item)}`;
+        }, '');
+        super._log(level, messageText, color);
+      }
+    }
+  }
 
-let logLevel = logLevelInfo;
+  processMessageObject(message) {
+    if (typeof message === 'object') {
+      return Object.keys(message).reduce((acc, key) => {
+        return `${acc ? acc + ', ' : ''}${this.processMessageItem(key, message[key])}`;
+      }, '');
+    }
+    return message;
+  }
 
-/**
- * Set the log level
- * @param {number} level - The log level
- **/
-function setLogLevel(level) {
-  logLevel = level;
-}
+  maskString(value) {
+    if (typeof value !== 'string') {
+      return value;
+    } else {
+      let visibleLength = this.maskCharactersVisible;
+      if ((value.startsWith(`"`) && value.endsWith(`"`)) || (value.startsWith(`'`) && value.endsWith(`'`))) {
+        visibleLength += 1;
+      }
+      if (value.length <= visibleLength) {
+        return '*'.repeat(value.length);
+      } else if (value.length <= visibleLength * 3) {
+        return value.substring(0, visibleLength) + '*'.repeat(value.length);
+      } else {
+        return (
+          value.substring(0, visibleLength) + '*'.repeat(value.length - visibleLength * 2) + value.substring(value.length - visibleLength)
+        );
+      }
+    }
+  }
 
-/**
- * To show the prefix of the logs
- * @param {string} level - The log level
- * @returns {string} - The prefix of the log
- **/
-function logPrefix(level) {
-  return `[${strftime('%Y-%m-%dT%H:%M:%S.%L')}] [${level}] - `;
-}
+  setMaskCharactersVisible(value) {
+    this.maskCharactersVisible = value;
+  }
 
-/**
- * Log debug messages
- * @param {string} message - The message to log
- */
-function logDebug(message) {
-  if (logLevel <= logLevelDebug) {
-    console.log(`${logPrefix('DBG ')}${message}`);
+  setMaskWords(value) {
+    if (Array.isArray(value)) {
+      this.maskWords = value;
+    }
+  }
+
+  appendMaskWord(...value) {
+    this.maskWords.push(...value.map((item) => item.toLowerCase()));
+  }
+
+  removeMaskWord(...value) {
+    this.maskWords = this.maskWords.filter((word) => !value.map((item) => item.toLowerCase()).includes(word));
+  }
+
+  maskMessageItem(key, value) {
+    if (typeof key === 'string' && typeof value === 'string') {
+      const keyLower = key.toLowerCase();
+      return this.maskWords.some((word) => keyLower.includes(word)) ? this.maskString(value) : value;
+    }
+    return value;
+  }
+
+  processMessageItem(key, value) {
+    let maskedValue = this.maskMessageItem(key, value);
+    if (key.startsWith('-')) {
+      return maskedValue;
+    } else {
+      if (typeof maskedValue === 'string') {
+        maskedValue = `"${maskedValue}"`;
+      }
+      return `${key}: ${maskedValue}`;
+    }
+  }
+
+  error(...message) {
+    super.error(message);
+  }
+
+  warn(...message) {
+    super.warn(message);
+  }
+
+  info(...message) {
+    super.info(message);
+  }
+
+  debug(...message) {
+    super.debug(message);
   }
 }
 
-/**
- * Log informational messages
- * @param {string} message - The message to log
- */
-function logInfo(message) {
-  if (logLevel <= logLevelInfo) {
-    console.log(`${logPrefix('INFO')}${message}`);
-  }
-}
+const securedLogger = new SecuredLogger('info');
 
-/**
- * Log warnings
- * @param {string} message - The message to log
- */
-function logWarning(message) {
-  if (logLevel <= logLevelWarning) {
-    console.warn(`${logPrefix('WARN')}${message}`);
-  }
-}
-
-/**
- * Log errors messages
- * @param {string} message - The message to log
- */
-function logError(message) {
-  if (logLevel <= logLevelError) {
-    console.error(`${logPrefix('ERR ')}${message}`);
-  }
-}
-
-module.exports = {
-  logLevelDebug,
-  logLevelInfo,
-  logLevelWarning,
-  logLevelError,
-  setLogLevel,
-  logDebug,
-  logInfo,
-  logWarning,
-  logError,
-};
+exports.securedLogger = securedLogger;

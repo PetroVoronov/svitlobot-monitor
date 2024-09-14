@@ -7,7 +7,7 @@ const stringify = require('json-stringify-safe');
 const {LocalStorage} = require('node-localstorage');
 const yargs = require('yargs');
 const {Cache} = require('./modules/cache/Cache');
-const {logLevelInfo, logLevelDebug, setLogLevel, logDebug, logInfo, logWarning, logError} = require('./modules/logging/logging');
+const {securedLogger: log} = require('./modules/logging/logging');
 const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
 const axios = require('axios');
@@ -122,7 +122,12 @@ const options = yargs
   .alias('h', 'help')
   .epilog(`${scriptName} v${scriptVersion}`).argv;
 
-setLogLevel(options.debug ? logLevelDebug : logLevelInfo);
+if (options.debug) {
+  log.setLevel('debug');
+}
+log.appendMaskWord('apiId', 'apiHash', 'phone');
+
+log.info(`Starting ${scriptName} v${scriptVersion}`);
 
 i18n.setLocale(options.language);
 
@@ -192,13 +197,12 @@ if (Array.isArray(options.stepIntervalPair) && options.stepIntervalPair.length >
   stepIntervalPairs.push({valueDelta: 5, timeInterval: options.refreshInterval * 60 * 1000});
 }
 statsBufferMaxLength = intervalMax / options.refreshInterval;
-logInfo(`Starting ${scriptName} v${scriptVersion}`);
-logInfo(`Group ID: ${options.group}`);
-logInfo(`Refresh interval: ${options.refreshInterval} minutes`);
-logInfo(`Step interval pairs: ${stringify(stepIntervalPairs)}`);
-logInfo(`Period of fixed tendency: ${options.periodOfFixedTendency} minutes`);
-logInfo(`Max percentage to react down: ${options.maxPercentageToReactDown}%`);
-logInfo(`Min percentage to react up: ${options.minPercentageToReactUp}%`);
+log.info(`Group ID: ${options.group}`);
+log.info(`Refresh interval: ${options.refreshInterval} minutes`);
+log.info(`Step interval pairs: ${stringify(stepIntervalPairs)}`);
+log.info(`Period of fixed tendency: ${options.periodOfFixedTendency} minutes`);
+log.info(`Max percentage to react down: ${options.maxPercentageToReactDown}%`);
+log.info(`Min percentage to react up: ${options.minPercentageToReactUp}%`);
 
 function getAPIAttributes() {
   return new Promise((resolve, reject) => {
@@ -220,13 +224,13 @@ function getAPIAttributes() {
               resolve({apiID: newApiId, hash});
             })
             .catch((error) => {
-              logError(`Error: ${error}`);
+              log.error(`Error: ${error}`);
               rl.close();
               reject(error);
             });
         })
         .catch((error) => {
-          logError(`Error: ${error}`);
+          log.error(`Error: ${error}`);
           rl.close();
           reject(error);
         });
@@ -251,7 +255,7 @@ function getBotAuthToken() {
           resolve(token);
         })
         .catch((error) => {
-          logError(`Error: ${error}`);
+          log.error(`Error: ${error}`);
           rl.close();
           reject(error);
         });
@@ -280,13 +284,13 @@ function getMessageTargetIds() {
               resolve();
             })
             .catch((error) => {
-              logError(`Error: ${error}`);
+              log.error(`Error: ${error}`);
               rl.close();
               reject(error);
             });
         })
         .catch((error) => {
-          logError(`Error: ${error}`);
+          log.error(`Error: ${error}`);
           rl.close();
           reject(error);
         });
@@ -313,6 +317,7 @@ function getTelegramClient() {
             connectionRetries: 5,
             useWSS: true,
             connectionTimeout: 10000,
+            appVersion: `${scriptName} v${scriptVersion}`,
           });
           const rl = readline.createInterface({
             input,
@@ -330,23 +335,23 @@ function getTelegramClient() {
                 return rl.question('Enter your password: ');
               },
               onError: (error) => {
-                logError(`Telegram client error: ${error}`);
+                log.error(`Telegram client error: ${error}`);
               },
             })
             .then(() => {
               rl.close();
-              logDebug('Telegram client is connected');
+              log.debug('Telegram client is connected');
               client.setParseMode(parseMode);
               resolve(client);
             })
             .catch((error) => {
               rl.close();
-              logError(`Telegram client connection error: ${error}`);
+              log.error(`Telegram client connection error: ${error}`);
               reject(error);
             });
         })
         .catch((error) => {
-          logError(`API attributes error: ${error}!`);
+          log.error(`API attributes error: ${error}!`);
           reject(error);
         });
     } else {
@@ -359,7 +364,7 @@ function getTelegramClient() {
           resolve(client);
         })
         .catch((error) => {
-          logError(`Bot Auth Token error: ${error}`);
+          log.error(`Bot Auth Token error: ${error}`);
           reject(error);
         });
     }
@@ -373,19 +378,19 @@ function telegramUserSessionMigrate() {
       oldSessionsExists = true;
       fs.readdirSync('data/session/user').forEach((file) => {
         const newFile = file.replace('%2F' + 'user', '');
-        logDebug(`Migrating user session file: user/${file} to ${newFile}`);
+        log.debug(`Migrating user session file: user/${file} to ${newFile}`);
         fs.renameSync(`data/session/user/${file}`, `data/session/${newFile}`);
       });
-      logDebug('Old user session migrated successfully.');
+      log.debug('Old user session migrated successfully.');
       fs.rmdirSync('data/session/user');
     } else {
-      logDebug('Old user session not found. Nothing to migrate.');
+      log.debug('Old user session not found. Nothing to migrate.');
     }
   } catch (error) {
     if (error.syscall === 'stat' && error.code === 'ENOENT' && error.path === 'data/session/user') {
-      logDebug('User session not found. Nothing to migrate.');
+      log.debug('User session not found. Nothing to migrate.');
     } else {
-      logError(`Error migrating user session: ${error}`);
+      log.error(`Error migrating user session: ${error}`);
       gracefulExit();
     }
   }
@@ -396,7 +401,7 @@ function telegramUserSessionMigrate() {
       }
     } catch (error) {
       if (!(error.syscall === 'stat' && error.code === 'ENOENT' && error.path === 'data/session/bot')) {
-        logDebug(`Error removing bot session: ${error}`);
+        log.debug(`Error removing bot session: ${error}`);
       }
     }
   }
@@ -409,11 +414,11 @@ function getTelegramTargetEntity() {
         .getChat(telegramChatId)
         .then((entity) => {
           targetTitle = entity.title || `${entity.first_name || ''} ${entity.last_name || ''} (${entity.username || ''})`;
-          logDebug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
+          log.debug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
           resolve(entity);
         })
         .catch((error) => {
-          logWarning(`Telegram chat with ID ${telegramChatId} not found! Error: ${error}`);
+          log.warn(`Telegram chat with ID ${telegramChatId} not found! Error: ${error}`);
           reject(error);
         });
     } else {
@@ -448,14 +453,14 @@ function getTelegramTargetEntity() {
                     // eslint-disable-next-line sonarjs/no-nested-functions
                     const targetTopic = response.topics.find((topic) => topic.id === telegramTopicId);
                     if (targetTopic) {
-                      logDebug(`Telegram topic "${targetTopic.title}" in chat "${targetTitle}" with ID ${telegramChatId} found!`);
+                      log.debug(`Telegram topic "${targetTopic.title}" in chat "${targetTitle}" with ID ${telegramChatId} found!`);
                       resolve(targetDialog.entity);
                     } else {
-                      logWarning(`Topic with id ${telegramTopicId} not found in "${targetTitle}" (${telegramChatId})!`);
+                      log.warn(`Topic with id ${telegramTopicId} not found in "${targetTitle}" (${telegramChatId})!`);
                       reject(new Error(`Topic with id ${telegramTopicId} not found in "${targetTitle}" (${telegramChatId})!`));
                     }
                   } else {
-                    logWarning(`No topics found in "${targetTitle}" (${telegramChatId})!`);
+                    log.warn(`No topics found in "${targetTitle}" (${telegramChatId})!`);
                     reject(new Error(`No topics found in "${targetTitle}" (${telegramChatId})!`));
                   }
                 })
@@ -463,7 +468,7 @@ function getTelegramTargetEntity() {
                   reject(error);
                 });
             } else {
-              logDebug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
+              log.debug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
               resolve(targetDialog.entity);
             }
           } else {
@@ -487,7 +492,7 @@ function telegramMessageOnChange(startedSwitchingOn) {
       (options.addTimestamp ? timeStamp + ': ' : '') +
       i18n.__(startedSwitchingOn ? 'Group %s - switching to on is started' : 'Group %s - switching to off is started', groupId);
 
-  logInfo(`${messageText}`);
+  log.info(`${messageText}`);
   if (telegramClient !== null) {
     if (options.asUser === true) {
       const telegramMessage = {
@@ -499,30 +504,30 @@ function telegramMessageOnChange(startedSwitchingOn) {
       telegramClient
         .sendMessage(targetEntity, telegramMessage)
         .then((message) => {
-          logDebug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
+          log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
           const previousMessageId = cache.getItem('lastMessageId');
           cache.setItem('lastMessageId', message.message_id);
           if (options.pinMessage) {
             telegramClient
               .pinMessage(targetEntity, message.id)
               .then(() => {
-                logDebug(`Telegram message pinned to "${targetTitle}" with topic ${telegramTopicId}`);
+                log.debug(`Telegram message pinned to "${targetTitle}" with topic ${telegramTopicId}`);
                 if (options.unpinPrevious) {
                   if (previousMessageId !== undefined) {
                     telegramClient.unpinMessage(targetEntity, previousMessageId).then(() => {
-                      logDebug(`Telegram message unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
+                      log.debug(`Telegram message unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
                     });
                   }
                 }
               })
               .catch((error) => {
-                logError(`Telegram message pin error: ${error}`);
+                log.error(`Telegram message pin error: ${error}`);
               });
           }
           cache.setItem('lastMessageId', message.id);
         })
         .catch((error) => {
-          logError(`Telegram message error: ${error}`);
+          log.error(`Telegram message error: ${error}`);
         });
     } else {
       const messageOptions = {
@@ -534,29 +539,29 @@ function telegramMessageOnChange(startedSwitchingOn) {
       telegramClient.telegram
         .sendMessage(telegramChatId, messageText, messageOptions)
         .then((message) => {
-          logDebug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
+          log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
           const previousMessageId = cache.getItem('lastMessageId');
           cache.setItem('lastMessageId', message.message_id);
           if (options.pinMessage) {
             telegramClient.telegram
               .pinChatMessage(telegramChatId, message.message_id)
               .then(() => {
-                logDebug(`Telegram message pinned to "${targetTitle}" with topic ${telegramTopicId}`);
+                log.debug(`Telegram message pinned to "${targetTitle}" with topic ${telegramTopicId}`);
                 if (options.unpinPrevious) {
                   if (previousMessageId !== undefined) {
                     telegramClient.telegram.unpinChatMessage(targetTitle, previousMessageId).then(() => {
-                      logDebug(`Telegram message unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
+                      log.debug(`Telegram message unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
                     });
                   }
                 }
               })
               .catch((error) => {
-                logError(`Telegram message pin error: ${error}`);
+                log.error(`Telegram message pin error: ${error}`);
               });
           }
         })
         .catch((error) => {
-          logError(`Telegram message error: ${error}`);
+          log.error(`Telegram message error: ${error}`);
         });
     }
   }
@@ -609,7 +614,7 @@ function checkGroupTendency() {
       stats.total = stats.on + stats.off;
       stats.percentage = stats.total > 0 ? Math.round((stats.on / stats.total) * 100) : 0;
       if (stats.total !== 0) {
-        logDebug(
+        log.debug(
           `For group ${groupId} - "on" percentage is ${stats.percentage}%, the other statistics are: ${stats.on} "on", ${stats.off} "off", ${stats.total} total`,
         );
         if (tendency !== '' && new Date(timeForDateBack - tendencyPeriod).getTime() > tendencyTime.getTime()) {
@@ -643,10 +648,10 @@ function checkGroupTendency() {
           statsBuffer.shift();
         }
       } else {
-        logWarning(`No data found for group ${groupId}!`);
+        log.warn(`No data found for group ${groupId}!`);
       }
     } else {
-      logWarning('No data received from SvitloBot API!');
+      log.warn('No data received from SvitloBot API!');
     }
   });
 }
@@ -679,34 +684,34 @@ function gracefulExit() {
     telegramClient
       .disconnect()
       .then(() => {
-        logInfo(`Telegram client is disconnected!`);
+        log.info(`Telegram client is disconnected!`);
         telegramClient
           .destroy()
           .then(() => {
-            logInfo(`Telegram client is destroyed!`);
+            log.info(`Telegram client is destroyed!`);
             telegramClient = null;
             exit(0);
           })
           .catch((error) => {
-            logError(`Telegram client - nothing to destroy!`);
+            log.error(`Telegram client - nothing to destroy!`);
             exit(0);
           });
       })
       .catch((error) => {
-        logError(`Telegram client is not connected!`);
+        log.error(`Telegram client is not connected!`);
         exit(0);
       });
   } else if (telegramClient !== null && options.user === false) {
     try {
       telegramClient.stop();
-      logInfo(`Telegram bot is stopped!`);
+      log.info(`Telegram bot is stopped!`);
       // eslint-disable-next-line sonarjs/no-ignored-exceptions
     } catch (error) {
-      logInfo(`Telegram bot is stopped!`);
+      log.info(`Telegram bot is stopped!`);
     }
     exit(0);
   } else {
-    logInfo('All clients are disconnected!');
+    log.info('All clients are disconnected!');
     exit(0);
   }
 }
@@ -718,33 +723,33 @@ readWrongGroups().then(() => {
   if (options.noTelegram === true) {
     startCheckGroupTendency();
   } else {
-    logInfo('Starting Telegram client...');
+    log.info('Starting Telegram client...');
     getMessageTargetIds()
       .then(() => {
         getTelegramClient()
           .then((client) => {
-            logInfo('Telegram client is connected. Getting target entity ...');
+            log.info('Telegram client is connected. Getting target entity ...');
             telegramClient = client;
             getTelegramTargetEntity()
               // eslint-disable-next-line sonarjs/no-nested-functions
               .then((entity) => {
-                logInfo('Telegram target entity is found. ');
+                log.info('Telegram target entity is found. ');
                 targetEntity = entity;
                 startCheckGroupTendency();
               })
               // eslint-disable-next-line sonarjs/no-nested-functions
               .catch((error) => {
-                logError(`Telegram target peer error: ${error}`);
+                log.error(`Telegram target peer error: ${error}`);
                 gracefulExit();
               });
           })
           .catch((error) => {
-            logError(`Telegram client error: ${error}`);
+            log.error(`Telegram client error: ${error}`);
             gracefulExit();
           });
       })
       .catch((error) => {
-        logError(`Error: ${error}`);
+        log.error(`Error: ${error}`);
         gracefulExit();
       });
   }
