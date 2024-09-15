@@ -17,7 +17,8 @@
         "svitlobot",
         "Svtilobot",
         "Voronov",
-        "Обов’язковий"
+        "Обов’язковий",
+        "whatwg-url"
     ],
     "ignoreWords": [],
     "import": []

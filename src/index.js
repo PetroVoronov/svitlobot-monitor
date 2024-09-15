@@ -1,5 +1,5 @@
 const {Api, TelegramClient} = require('telegram');
-const {Telegraf} = require('telegraf');
+const {Api: GrammyApi} = require('grammy');
 const {StringSession, StoreSession} = require('telegram/sessions');
 const readline = require('node:readline/promises');
 const {stdin: input, stdout: output, exit} = require('node:process');
@@ -360,7 +360,7 @@ function getTelegramClient() {
       }
       getBotAuthToken()
         .then((token) => {
-          const client = new Telegraf(token);
+          const client = new GrammyApi(token);
           resolve(client);
         })
         .catch((error) => {
@@ -410,8 +410,7 @@ function telegramUserSessionMigrate() {
 function getTelegramTargetEntity() {
   return new Promise((resolve, reject) => {
     if (options.asUser === false) {
-      telegramClient.telegram
-        .getChat(telegramChatId)
+      telegramClient.getChat(telegramChatId)
         .then((entity) => {
           targetTitle = entity.title || `${entity.first_name || ''} ${entity.last_name || ''} (${entity.username || ''})`;
           log.debug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
@@ -422,8 +421,7 @@ function getTelegramTargetEntity() {
           reject(error);
         });
     } else {
-      telegramClient
-        .getDialogs()
+      telegramClient.getDialogs()
         .then((dialogs) => {
           let chatId = telegramChatId > 0 ? telegramChatId : -telegramChatId;
           if (chatId > 1000000000000) {
@@ -482,6 +480,79 @@ function getTelegramTargetEntity() {
   });
 }
 
+function telegramSendMessage(target, messages, messageOptions) {
+  return new Promise((resolve, reject) => {
+    if (telegramClient !== null) {
+      telegramClient
+        .sendMessage(target, messages, messageOptions)
+        .then((message) => {
+          resolve(options.asUser === true ? message.id : message.message_id);
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    } else {
+      reject(new Error('Telegram client is not ready!'));
+    }
+  });
+}
+
+function telegramPinMessage(target, messageId) {
+  return new Promise((resolve, reject) => {
+    if (telegramClient !== null) {
+      if (options.asUser === true) {
+        telegramClient
+          .pinMessage(target, messageId)
+          .then(() => {
+            resolve();
+          })
+          .catch((error) => {
+            reject(error);
+          });
+      } else {
+        telegramClient
+          .pinChatMessage(target, messageId)
+          .then(() => {
+            resolve();
+          })
+          .catch((error) => {
+            reject(error);
+          });
+      }
+    } else {
+      reject(new Error('Telegram client is not ready!'));
+    }
+  });
+}
+
+function telegramUnpinMessage(target, messageId) {
+  return new Promise((resolve, reject) => {
+    if (telegramClient !== null) {
+      if (options.asUser === true) {
+        telegramClient
+          .unpinMessage(target, messageId)
+          .then(() => {
+            resolve();
+          })
+          .catch((error) => {
+            reject(error);
+          });
+      } else {
+        telegramClient
+          .unpinChatMessage(target, messageId)
+          .then(() => {
+            resolve();
+          })
+          .catch((error) => {
+            reject(error);
+          });
+      }
+    } else {
+      reject(new Error('Telegram client is not ready!'));
+    }
+  });
+}
+
 function telegramMessageOnChange(startedSwitchingOn) {
   const timeStampOptions = {timeStyle: 'short', dateStyle: 'short'};
   if (options.timeZone) {
@@ -493,77 +564,60 @@ function telegramMessageOnChange(startedSwitchingOn) {
       i18n.__(startedSwitchingOn ? 'Group %s - switching to on is started' : 'Group %s - switching to off is started', groupId);
 
   log.info(`${messageText}`);
+  let telegramMessage;
+  let telegramTarget;
+  let messageOptions;
   if (telegramClient !== null) {
     if (options.asUser === true) {
-      const telegramMessage = {
+      telegramMessage = {
         message: messageText,
       };
       if (telegramTopicId > 0) {
         telegramMessage.replyTo = telegramTopicId;
       }
-      telegramClient
-        .sendMessage(targetEntity, telegramMessage)
-        .then((message) => {
-          log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
-          const previousMessageId = cache.getItem('lastMessageId');
-          cache.setItem('lastMessageId', message.message_id);
-          if (options.pinMessage) {
-            telegramClient
-              .pinMessage(targetEntity, message.id)
-              .then(() => {
-                log.debug(`Telegram message pinned to "${targetTitle}" with topic ${telegramTopicId}`);
-                if (options.unpinPrevious) {
-                  if (previousMessageId !== undefined) {
-                    telegramClient.unpinMessage(targetEntity, previousMessageId).then(() => {
-                      log.debug(`Telegram message unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
-                    });
-                  }
-                }
-              })
-              .catch((error) => {
-                log.error(`Telegram message pin error: ${error}`);
-              });
-          }
-          cache.setItem('lastMessageId', message.id);
-        })
-        .catch((error) => {
-          log.error(`Telegram message error: ${error}`);
-        });
+      telegramTarget = targetEntity;
     } else {
-      const messageOptions = {
+      telegramMessage = messageText;
+      telegramTarget = telegramChatId;
+      messageOptions = {
         parse_mode: parseMode,
       };
       if (telegramTopicId > 0) {
         messageOptions.message_thread_id = telegramTopicId;
       }
-      telegramClient.telegram
-        .sendMessage(telegramChatId, messageText, messageOptions)
-        .then((message) => {
-          log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
-          const previousMessageId = cache.getItem('lastMessageId');
-          cache.setItem('lastMessageId', message.message_id);
-          if (options.pinMessage) {
-            telegramClient.telegram
-              .pinChatMessage(telegramChatId, message.message_id)
-              .then(() => {
-                log.debug(`Telegram message pinned to "${targetTitle}" with topic ${telegramTopicId}`);
-                if (options.unpinPrevious) {
-                  if (previousMessageId !== undefined) {
-                    telegramClient.telegram.unpinChatMessage(targetTitle, previousMessageId).then(() => {
-                      log.debug(`Telegram message unpinned from "${targetTitle}" with topic ${telegramTopicId}`);
-                    });
-                  }
-                }
-              })
-              .catch((error) => {
-                log.error(`Telegram message pin error: ${error}`);
-              });
-          }
-        })
-        .catch((error) => {
-          log.error(`Telegram message error: ${error}`);
-        });
     }
+    telegramSendMessage(telegramTarget, telegramMessage, messageOptions)
+      .then((messageId) => {
+        log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
+        const previousMessageId = cache.getItem('lastMessageId');
+        cache.setItem('lastMessageId', messageId);
+        if (options.pinMessage) {
+          telegramPinMessage(telegramTarget, messageId)
+            .then(() => {
+              log.debug(`Telegram message with id: ${messageId} pinned to "${targetTitle}" with topic ${telegramTopicId}`);
+              if (options.unpinPrevious) {
+                if (previousMessageId !== undefined && previousMessageId !== null) {
+                  telegramUnpinMessage(telegramTarget, previousMessageId)
+                    .then(() => {
+                      log.debug(
+                        `Telegram message with id: ${previousMessageId} unpinned from "${targetTitle}" with topic ${telegramTopicId}`,
+                      );
+                    })
+                    .catch((error) => {
+                      log.error(`Telegram message unpin error: ${error}`);
+                    });
+                }
+              }
+            })
+            .catch((error) => {
+              log.error(`Telegram message pin error: ${error}`);
+            });
+        }
+      })
+      .catch((error) => {
+        log.error(`Telegram message error: ${error}`);
+      });
+
   }
 }
 
@@ -731,13 +785,11 @@ readWrongGroups().then(() => {
             log.info('Telegram client is connected. Getting target entity ...');
             telegramClient = client;
             getTelegramTargetEntity()
-              // eslint-disable-next-line sonarjs/no-nested-functions
               .then((entity) => {
                 log.info('Telegram target entity is found. ');
                 targetEntity = entity;
                 startCheckGroupTendency();
               })
-              // eslint-disable-next-line sonarjs/no-nested-functions
               .catch((error) => {
                 log.error(`Telegram target peer error: ${error}`);
                 gracefulExit();
