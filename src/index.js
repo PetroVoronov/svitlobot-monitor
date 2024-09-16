@@ -15,11 +15,10 @@ const fs = require('node:fs');
 
 const options = yargs
   .usage('Usage: $0 [options]')
-  .option('l', {
-    alias: 'language',
-    describe: 'Language code for i18n',
-    type: 'string',
-    default: 'en',
+  .option('as-user', {
+    describe: 'Start as user instance (bot instance by default)',
+    type: 'boolean',
+    default: false,
     demandOption: false,
   })
   .option('g', {
@@ -33,6 +32,7 @@ const options = yargs
     alias: 'step-interval-pair',
     describe: 'Value step in percentage and time interval in minutes, to detect the tendency. Format is "percentage:time"',
     type: 'array',
+    default: ['5:1'],
     demandOption: false,
   })
   .option('max', {
@@ -62,17 +62,17 @@ const options = yargs
     default: 1,
     demandOption: false,
   })
-  .option('n', {
-    alias: 'no-telegram',
+  .option('without-telegram', {
     describe: 'Start without Telegram client',
     type: 'boolean',
     default: false,
     demandOption: false,
   })
-  .option('as-user', {
-    describe: 'Start as user instance (bot instance by default)',
-    type: 'boolean',
-    default: false,
+  .option('l', {
+    alias: 'language',
+    describe: 'Language code for i18n',
+    type: 'string',
+    default: 'en',
     demandOption: false,
   })
   .option('p', {
@@ -101,6 +101,13 @@ const options = yargs
     describe: 'Time zone for timestamp',
     type: 'string',
     default: process.env.TZ || '',
+    demandOption: false,
+  })
+  .option('n', {
+    alias: 'night-time',
+    describe: 'Interval in hours, when the script is sending messages in silent mode. Format is "start:stop" in 24h format',
+    type: 'string',
+    default: '',
     demandOption: false,
   })
   .option('d', {
@@ -176,6 +183,10 @@ const tendencyOff = 'off';
 let tendency = '';
 let tendencyTime = new Date();
 
+// eslint-disable-next-line sonarjs/concise-regex
+const nightTimeRegexp = /^([01]?[0-9]|2[0-3]):([01]?[0-9]|2[0-3])$/;
+const nightTimeInterval = [];
+
 if (Array.isArray(options.stepIntervalPair) && options.stepIntervalPair.length > 0) {
   stepIntervalPairs = options.stepIntervalPair
     .map((pair) => {
@@ -193,16 +204,28 @@ if (Array.isArray(options.stepIntervalPair) && options.stepIntervalPair.length >
     })
     .filter((item) => item !== null)
     .sort((a, b) => a.timeInterval - b.timeInterval);
-} else {
-  stepIntervalPairs.push({valueDelta: 5, timeInterval: options.refreshInterval * 60 * 1000});
 }
 statsBufferMaxLength = intervalMax / options.refreshInterval;
+if (typeof options.nightTime === 'string' && options.nightTime.length > 0) {
+  const intervalMatch = options.nightTime.match(nightTimeRegexp);
+  if (intervalMatch !== null) {
+    nightTimeInterval.push(parseInt(intervalMatch[1]), parseInt(intervalMatch[2]));
+  }
+}
+
+log.info(`As user: ${options.asUser}`);
 log.info(`Group ID: ${options.group}`);
 log.info(`Refresh interval: ${options.refreshInterval} minutes`);
-log.info(`Step interval pairs: ${stringify(stepIntervalPairs)}`);
+log.info('Step interval pairs: ' + stringify(stepIntervalPairs.map((pair) => `${pair.valueDelta}% : ${pair.timeInterval / 60000} min.`)));
 log.info(`Period of fixed tendency: ${options.periodOfFixedTendency} minutes`);
 log.info(`Max percentage to react down: ${options.maxPercentageToReactDown}%`);
 log.info(`Min percentage to react up: ${options.minPercentageToReactUp}%`);
+log.info(`Language: ${options.language}`);
+log.info(`Pin message: ${options.pinMessage}`);
+log.info(`Unpin previous: ${options.unpinPrevious}`);
+log.info(`Add timestamp: ${options.addTimestamp}`);
+log.info(`Time zone: ${options.timeZone}`);
+log.info(`Night time interval: ${nightTimeInterval.length === 2 ? options.nightTime : 'not set'}`);
 
 function getAPIAttributes() {
   return new Promise((resolve, reject) => {
@@ -355,7 +378,10 @@ function getTelegramClient() {
           reject(error);
         });
     } else {
-      if (typeof process.env.TELEGRAM_BOT_AUTH_TOKEN === 'string' && process.env.TELEGRAM_BOT_AUTH_TOKEN.length >= botAuthTokenMinimumLength) {
+      if (
+        typeof process.env.TELEGRAM_BOT_AUTH_TOKEN === 'string' &&
+        process.env.TELEGRAM_BOT_AUTH_TOKEN.length >= botAuthTokenMinimumLength
+      ) {
         cache.setItem('telegramBotAuthToken', process.env.TELEGRAM_BOT_AUTH_TOKEN);
       }
       getBotAuthToken()
@@ -410,7 +436,8 @@ function telegramUserSessionMigrate() {
 function getTelegramTargetEntity() {
   return new Promise((resolve, reject) => {
     if (options.asUser === false) {
-      telegramClient.getChat(telegramChatId)
+      telegramClient
+        .getChat(telegramChatId)
         .then((entity) => {
           targetTitle = entity.title || `${entity.first_name || ''} ${entity.last_name || ''} (${entity.username || ''})`;
           log.debug(`Telegram chat "${targetTitle}" with ID ${telegramChatId} found!`);
@@ -421,7 +448,8 @@ function getTelegramTargetEntity() {
           reject(error);
         });
     } else {
-      telegramClient.getDialogs()
+      telegramClient
+        .getDialogs()
         .then((dialogs) => {
           let chatId = telegramChatId > 0 ? telegramChatId : -telegramChatId;
           if (chatId > 1000000000000) {
@@ -558,10 +586,19 @@ function telegramMessageOnChange(startedSwitchingOn) {
   if (options.timeZone) {
     timeStampOptions.timeZone = options.timeZone;
   }
-  const timeStamp = new Date().toLocaleString(options.language, timeStampOptions),
-    messageText =
-      (options.addTimestamp ? timeStamp + ': ' : '') +
-      i18n.__(startedSwitchingOn ? 'Group %s - switching to on is started' : 'Group %s - switching to off is started', groupId);
+  const timeStamp = new Date().toLocaleString(options.language, timeStampOptions);
+  const messageText =
+    (options.addTimestamp ? timeStamp + ': ' : '') +
+    i18n.__(startedSwitchingOn ? 'Group %s - switching to on is started' : 'Group %s - switching to off is started', groupId);
+
+  const currentHour = options.timeZone
+    ? new Date().toLocaleString(options.language, {timeZone: options.timeZone, hour: 'numeric', hour12: false})
+    : new Date().getHours();
+
+  const silentMode =
+    nightTimeInterval.length === 2 &&
+    ((nightTimeInterval[1] > nightTimeInterval[0] && currentHour >= nightTimeInterval[0] && currentHour < nightTimeInterval[1]) ||
+      (nightTimeInterval[1] < nightTimeInterval[0] && (currentHour >= nightTimeInterval[0] || currentHour < nightTimeInterval[1])));
 
   log.info(`${messageText}`);
   let telegramMessage;
@@ -575,6 +612,9 @@ function telegramMessageOnChange(startedSwitchingOn) {
       if (telegramTopicId > 0) {
         telegramMessage.replyTo = telegramTopicId;
       }
+      if (silentMode === true) {
+        telegramMessage.silent = true;
+      }
       telegramTarget = targetEntity;
     } else {
       telegramMessage = messageText;
@@ -584,6 +624,9 @@ function telegramMessageOnChange(startedSwitchingOn) {
       };
       if (telegramTopicId > 0) {
         messageOptions.message_thread_id = telegramTopicId;
+      }
+      if (silentMode === true) {
+        messageOptions.disable_notification = true;
       }
     }
     telegramSendMessage(telegramTarget, telegramMessage, messageOptions)
@@ -617,7 +660,6 @@ function telegramMessageOnChange(startedSwitchingOn) {
       .catch((error) => {
         log.error(`Telegram message error: ${error}`);
       });
-
   }
 }
 
@@ -774,7 +816,7 @@ process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
 readWrongGroups().then(() => {
-  if (options.noTelegram === true) {
+  if (options.withoutTelegram === true) {
     startCheckGroupTendency();
   } else {
     log.info('Starting Telegram client...');
@@ -806,4 +848,3 @@ readWrongGroups().then(() => {
       });
   }
 });
-
