@@ -181,7 +181,7 @@
 * Refactor Dockerfile and README files ([4866ca3](https://github.com/PetroVoronov/svitlobot-monitor/commit/4866ca36087d080529a321db75c3cdcb409b5dd1))
 
 
-### Chore
+### Miscellaneous Chores
 
 * Merge pull request #2 from PetroVoronov/dependabot/npm_and_yarn/telegram-2.24.11 ([1c79ac7](https://github.com/PetroVoronov/svitlobot-monitor/commit/1c79ac72a8e3718f9e27e19a2ef27850499b0319))
 * Merge pull request #1 from PetroVoronov/dependabot/npm_and_yarn/eslint-plugin-sonarjs-2.0.2 ([7896dea](https://github.com/PetroVoronov/svitlobot-monitor/commit/7896dead32165dffa636dfacef9c9c766703e705))
@@ -252,7 +252,7 @@
     - If tendency is changed - appropriate message is generated.
 
 
-### Chore
+### Miscellaneous Chores
 
 * Refactor Telegram client initialization and error handling ([7d7349a](https://github.com/PetroVoronov/svitlobot-monitor/commit/7d7349abe7794ef1d23ac76bdab1f0cf56a70bad))
 
@@ -260,7 +260,7 @@
 ## 1.0.0 (2024-07-27)
 
 
-### Chore
+### Miscellaneous Chores
 
 * Initial "template" version 1.0.0 ([d643fdc](https://github.com/PetroVoronov/svitlobot-monitor/commit/d643fdc939a46068cf2a6a13a031b2efd7955c63))
 * Initial commit ([b0d4bcd](https://github.com/PetroVoronov/svitlobot-monitor/commit/b0d4bcd66cd6622a51f5bb17c72f1fa715182781))
