@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.5.0](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.4.0...v1.5.0) (2024-09-16)
+
+
+### Miscellaneous Chores
+
+* `no-telegram` options renamed to `without-telegram` and has no short key now ([1454116](https://github.com/PetroVoronov/svitlobot-monitor/commit/1454116c1b06a13aaceba8b5a9dfa1b67681d5f7))
+* Additional logging of command-line options on start ([1454116](https://github.com/PetroVoronov/svitlobot-monitor/commit/1454116c1b06a13aaceba8b5a9dfa1b67681d5f7))
+
+
+### Documentation
+
+* Append missed records to CHANGELOG.md ([3e0f31b](https://github.com/PetroVoronov/svitlobot-monitor/commit/3e0f31b4535857d905cfafdf10e27e83543e8a9b))
+
+
+### Features
+
+* New option: `nightTime` - Interval in hours, when the script is sending messages in silent mode. Format is "start:stop" in 24h format ([1454116](https://github.com/PetroVoronov/svitlobot-monitor/commit/1454116c1b06a13aaceba8b5a9dfa1b67681d5f7))
+
 ## [1.4.0](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.3.8...v1.4.0) (2024-09-15)
 
 
