@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.5.1](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.0...v1.5.1) (2024-09-20)
+
+
+### Documentation
+
+* Fix mistypings in 'SvitloBot` ... ([43af232](https://github.com/PetroVoronov/svitlobot-monitor/commit/43af2325f29be9aae9ebf99554bb9ed303612e49))
+* Refactor CHANGELOG.md to categorize miscellaneous chores ([c752cc8](https://github.com/PetroVoronov/svitlobot-monitor/commit/c752cc88f61adbd96ca063e0264ba6b833bab911))
+
+
+### Bug Fixes
+
+* mistyping, when `timeForDateBack` used before initialization ([43af232](https://github.com/PetroVoronov/svitlobot-monitor/commit/43af2325f29be9aae9ebf99554bb9ed303612e49))
+
+
+### Code Refactoring
+
+* handle errors in checkGroupTendency() for `axios` request to `SviltoBot API`. ([43af232](https://github.com/PetroVoronov/svitlobot-monitor/commit/43af2325f29be9aae9ebf99554bb9ed303612e49))
+* Refactor logging statements in Cache.js ([0a1cb16](https://github.com/PetroVoronov/svitlobot-monitor/commit/0a1cb16043fe0af725dc710bfee40634262560ee))
+
 ## [1.5.0](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.4.0...v1.5.0) (2024-09-16)
 
 
