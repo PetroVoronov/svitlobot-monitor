@@ -1,4 +1,4 @@
-### Svitlobot Monitor
+### SviltoBot Monitor
 
 [![GitHub release](https://img.shields.io/github/v/release/PetroVoronov/svitlobot-monitor)](https://github.com/PetroVoronov/svitlobot-monitor/releases)
 [![Docker Image Version](https://img.shields.io/docker/v/petrovoronov/svitlobot-monitor)](https://hub.docker.com/r/petrovoronov/svitlobot-monitor)
@@ -11,7 +11,7 @@
 
 ## Опис
 
-Цей проєкт перевіряє дані з API Svitlobot і надсилає індикацію тенденції вмикання чи вимикання електроенергії для відповідної групи ДТЕК до відповідного користувача, чату, групи чи форуму в Telegram.
+Цей проєкт перевіряє дані з API SviltoBot і надсилає індикацію тенденції вмикання чи вимикання електроенергії для відповідної групи ДТЕК до відповідного користувача, чату, групи чи форуму в Telegram.
 Тобто використовуючи цю аплікацію ви зможете отримати повідомлення про початок вимикання або вмикання електроенергії по вашої групі до того, як це станется у вас.
 
 ## Особливості

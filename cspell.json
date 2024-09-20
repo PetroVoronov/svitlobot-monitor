@@ -5,6 +5,7 @@
     "dictionaryDefinitions": [],
     "dictionaries": [],
     "words": [
+        "axios",
         "DTEK",
         "genversion",
         "gramjs",
@@ -14,11 +15,11 @@
         "petrovoronov",
         "preversion",
         "sonarjs",
+        "Svilto",
         "svitlobot",
-        "Svtilobot",
         "Voronov",
-        "Обов’язковий",
-        "whatwg-url"
+        "whatwg-url",
+        "Обов’язковий"
     ],
     "ignoreWords": [],
     "import": []

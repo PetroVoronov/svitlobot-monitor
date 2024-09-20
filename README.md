@@ -1,4 +1,4 @@
-# Svitlobot monitor
+# SviltoBot monitor
 
 [![GitHub release](https://img.shields.io/github/v/release/PetroVoronov/svitlobot-monitor)](https://github.com/PetroVoronov/svitlobot-monitor/releases)
 [![Docker Image Version](https://img.shields.io/docker/v/petrovoronov/svitlobot-monitor)](https://hub.docker.com/r/petrovoronov/svitlobot-monitor)
@@ -12,7 +12,7 @@
 
 ## About
 
-This project check the data from Svtilobot API and send the electricity switching on or off tendency indication for the appropriate DTEK group to the appropriate telegram user/chat/group/forum.
+This project check the data from SviltoBot API and send the electricity switching on or off tendency indication for the appropriate DTEK group to the appropriate telegram user/chat/group/forum.
 By using this application, you will be able to receive notifications about the start of power outages or restorations for your group before it happens to you.
 
 ## Features

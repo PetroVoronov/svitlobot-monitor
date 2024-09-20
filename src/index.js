@@ -713,10 +713,10 @@ function checkGroupTendency() {
         log.debug(
           `For group ${groupId} - "on" percentage is ${stats.percentage}%, the other statistics are: ${stats.on} "on", ${stats.off} "off", ${stats.total} total`,
         );
+        const timeForDateBack = new Date().getTime();
         if (tendency !== '' && new Date(timeForDateBack - tendencyPeriod).getTime() > tendencyTime.getTime()) {
           tendency = '';
         }
-        const timeForDateBack = new Date().getTime();
         stepIntervalPairs.some((pair) => {
           let result = false;
           const dateBack = new Date(timeForDateBack - pair.timeInterval * 1.01),
@@ -749,6 +749,8 @@ function checkGroupTendency() {
     } else {
       log.warn('No data received from SvitloBot API!');
     }
+  }).catch((error) => {
+    log.error(`Error: ${error}`);
   });
 }
 
