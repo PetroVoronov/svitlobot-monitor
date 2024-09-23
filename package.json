@@ -20,7 +20,7 @@
     "i18n": "^0.15.1",
     "json-stringify-safe": "^5.0.1",
     "node-localstorage": "^3.0.5",
-    "telegram": "2.25.4",
+    "telegram": "2.25.11",
     "yargs": "^17.7.2"
   },
   "scripts": {
