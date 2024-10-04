@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.5.3](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.2...v1.5.3) (2024-10-04)
+
+
+### Code Refactoring
+
+* **docker:** update Dockerfile entrypoint and clear CMD. **Please be aware* - it has influence, if you use modified command-line ([9a739cf](https://github.com/PetroVoronov/svitlobot-monitor/commit/9a739cfa0718d905f4b9015c3edd10526eac945b))
+
+
+### Continuous Integration
+
+* modify release-please config for changelog sections to reorder them ([9a739cf](https://github.com/PetroVoronov/svitlobot-monitor/commit/9a739cfa0718d905f4b9015c3edd10526eac945b))
+
+
+### Documentation
+
+* Update README's to reflect the changes in Dockerfile ([9a739cf](https://github.com/PetroVoronov/svitlobot-monitor/commit/9a739cfa0718d905f4b9015c3edd10526eac945b))
+
 ## [1.5.2](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.1...v1.5.2) (2024-09-27)
 
 
