@@ -41,7 +41,7 @@
 docker pull petrovoronov/svitlobot-monitor
 ```
 
-### Встановлення Node.js з вихідного коду
+### Node.js - встановлення з вихідного коду
 
 1. Клонуйте репозиторій:
    ```sh
@@ -121,7 +121,7 @@ export TELEGRAM_TOPIC_ID=your_telegram_topic_id
 ### Приклад використання
 
 ```sh
-node index.js --language uk --group 2 --refresh-interval 5 --debug
+node src/index.js --language uk --group 2 --refresh-interval 5 --debug
 ```
 
 ## Запуск додатку
@@ -131,7 +131,7 @@ node index.js --language uk --group 2 --refresh-interval 5 --debug
 Приклад з усіма можливими опціями командного рядка:
 
 ```sh
-node index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-message --unpin-previous --add-timestamp --time-zone "Europe/Kiev"
+node src/index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-message --unpin-previous --add-timestamp --time-zone "Europe/Kiev"
 ```
 
 ### Docker
@@ -161,7 +161,7 @@ node index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-messa
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         petrovoronov/svitlobot-monitor:latest \
-        node src/index.js --as-user --language uk --group 2 --refresh-interval 5
+        --as-user --language uk --group 2 --refresh-interval 5
     ```
 
 - Для роботи як користувач Telegram та встановлення всіх основних параметрів конфігурації як змінні середовища:
@@ -174,7 +174,7 @@ node index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-messa
         -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
         -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
         petrovoronov/svitlobot-monitor:latest \
-        node src/index.js --as-user --language uk --group 2 --refresh-interval 5
+        --as-user --language uk --group 2 --refresh-interval 5
     ```
 
 - Для роботи як користувач Telegram і налаштування всіх основних параметрів конфігурації через змінні середовища (але інтерактивний режим все ще потрібен):
@@ -183,7 +183,7 @@ node index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-messa
         -v /path/to/your/data:/app/data \
         -v /path/to/your/locales:/app/locales \
         petrovoronov/svitlobot-monitor:latest \
-        node src/index.js --language uk --group 2 --refresh-interval 5
+        --language uk --group 2 --refresh-interval 5
     ```
 
 Після першого запуску додаток збереже параметри конфігурації та додаткову інформацію - будь ласка, зупиніть контейнер, натиснувши `Ctrl+C`, і запустіть його знову за допомогою команд з наступного розділу.
@@ -199,7 +199,7 @@ docker run -d --name svitlobot-monitor \
     -e TELEGRAM_CHAT_ID=your_telegram_chat_id \
     -e TELEGRAM_TOPIC_ID=your_telegram_topic_id \
     petrovoronov/svitlobot-monitor:latest \
-    node src/index.js --language uk --group 2 --refresh-interval 5
+    --language uk --group 2 --refresh-interval 5
 ```
 **Важлива примітка: передайте всі пізніше необхідні параметри командного рядка під час першого запуску!**
 
@@ -240,7 +240,7 @@ services:
             - TELEGRAM_API_HASH=your_telegram_api_hash
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
             - TELEGRAM_TOPIC_ID=your_telegram_topic_id
-        command: node src/index.js --as-user --language uk --group 2 --refresh-interval 5
+        command: --as-user --language uk --group 2 --refresh-interval 5
 ```
 
 ### У разі роботи як бот Telegram:
@@ -257,7 +257,7 @@ services:
             - TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
             - TELEGRAM_CHAT_ID=your_telegram_chat_id
             - TELEGRAM_TOPIC_ID=your_telegram_topic_id
-        command: node src/index.js --language uk --group 2 --refresh-interval 5
+        command: --language uk --group 2 --refresh-interval 5
 ```
 
 Замініть `/path/to/your/data` та `/path/to/your/locales` на реальні шляхи у вашій системі, де ви хочете зберігати дані програми та файли локалізації.
