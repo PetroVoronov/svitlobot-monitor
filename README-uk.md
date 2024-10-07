@@ -1,4 +1,4 @@
-### SviltoBot Monitor
+# SviltoBot Monitor
 
 [![GitHub release](https://img.shields.io/github/v/release/PetroVoronov/svitlobot-monitor)](https://github.com/PetroVoronov/svitlobot-monitor/releases)
 [![Docker Image Version](https://img.shields.io/docker/v/petrovoronov/svitlobot-monitor)](https://hub.docker.com/r/petrovoronov/svitlobot-monitor)
@@ -7,7 +7,6 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/PetroVoronov/svitlobot-monitor)](https://github.com/PetroVoronov/svitlobot-monitor/commits/main)
 [![GitHub issues](https://img.shields.io/github/issues/PetroVoronov/svitlobot-monitor)](https://github.com/PetroVoronov/svitlobot-monitor/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/PetroVoronov/svitlobot-monitor)](https://github.com/PetroVoronov/svitlobot-monitor/pulls)
-
 
 ## Опис
 
@@ -31,7 +30,7 @@
 
 ### Як отримати ідентифікатор теми в Telegram
 
-Надішліть повідомлення в цю тему, потім клацніть правою кнопкою миші на повідомлення і виберіть "Копіювати посилання на повідомлення". Вставте його в будь-який текстовий редактор і зверніть увагу, що воно має наступну структуру: https://t.me/c/XXXXXXXXXX/YY/ZZ. Ідентифікатор теми - це YY (ціле число).
+Надішліть повідомлення в цю тему, потім клацніть правою кнопкою миші на повідомлення і виберіть "Копіювати посилання на повідомлення". Вставте його в будь-який текстовий редактор і зверніть увагу, що воно має наступну структуру: ```https://t.me/c/XXXXXXXXXX/YY/ZZ```. Ідентифікатор теми - це YY (ціле число).
 
 ## Встановлення
 
@@ -44,13 +43,16 @@ docker pull petrovoronov/svitlobot-monitor
 ### Node.js - встановлення з вихідного коду
 
 1. Клонуйте репозиторій:
+
    ```sh
    git clone https://github.com/PetroVoronov/svitlobot-monitor.git
    cd svitlobot-monitor
    ```
+
 2. Або завантажте бажану версію зі [сторінки релізів](https://github.com/PetroVoronov/svitlobot-monitor/releases) та розпакуйте її.
 
 3. Встановіть залежності:
+
    ```sh
    npm install
    ```
@@ -59,18 +61,19 @@ docker pull petrovoronov/svitlobot-monitor
 
 Базові параметри конфігурації, включаючи облікові дані Telegram, можуть бути передані як змінні середовища, або ви можете пропустити це, і програма запросить вас ввести їх інтерактивно.
 
-### Змінні середовища у разі роботи як користувач Telegram (за замовчуванням):
+### Змінні середовища у разі роботи як бот Telegram (за замовчуванням)
+
 ```sh
-export TELEGRAM_API_ID=your_telegram_api_id
-export TELEGRAM_API_HASH=your_telegram_api_hash
+export TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
 export TELEGRAM_CHAT_ID=your_telegram_chat_id
 export TELEGRAM_TOPIC_ID=your_telegram_topic_id
 ```
 
-### Змінні середовища у разі роботи як бот Telegram:
+### Змінні середовища у разі роботи від імені користувача Telegram
 
 ```sh
-export TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
+export TELEGRAM_API_ID=your_telegram_api_id
+export TELEGRAM_API_HASH=your_telegram_api_hash
 export TELEGRAM_CHAT_ID=your_telegram_chat_id
 export TELEGRAM_TOPIC_ID=your_telegram_topic_id
 ```
@@ -143,19 +146,22 @@ node src/index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-m
 #### Том Docker
 
 **Необхідно зіставити каталог даних додатка з контейнером:**
+
 - `/app/data` — для даних додатка, включаючи конфігурації та деякі інші актуальні дані. Обов’язковий для зіставлення!
 Можна зіставити з будь-яким локальним каталогом на хост-системі або томом Docker.
 
 Додатково можна зіставити каталог локалізації з контейнером:
+
 - `/app/locales` — для файлів локалізації, якщо ви хочете використовувати власні повідомлення в чаті Telegram. Опціонально для зіставлення.
 
-#### Перший запуск Docker для роботи як користувач Telegram або як бот Telegram для налаштування всіх основних параметрів конфігурації в інтерактивному режимі
+#### Перший запуск Docker для роботи від імені користувача Telegram
 
 Через специфіку середовища Docker, додаток не зможе запитати відсутні параметри конфігурації в інтерактивному режимі. Тому вам потрібно зробити перший запуск в інтерактивному режимі, щоб надати відсутні параметри.
 
 Отже, перший запуск повинен бути таким:
 
 - Для роботи як користувач Telegram та інтерактивного встановлення всіх основних параметрів конфігурації:
+
     ```sh
     docker run -it --name svitlobot-monitor \
         -v /path/to/your/data:/app/data \
@@ -165,6 +171,7 @@ node src/index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-m
     ```
 
 - Для роботи як користувач Telegram та встановлення всіх основних параметрів конфігурації як змінні середовища:
+
     ```sh
     docker run -it --name svitlobot-monitor \
         -v /path/to/your/data:/app/data \
@@ -177,20 +184,14 @@ node src/index.js --language uk --group 2 --refresh-interval 5 --as-user --pin-m
         --as-user --language uk --group 2 --refresh-interval 5
     ```
 
-- Для роботи як користувач Telegram і налаштування всіх основних параметрів конфігурації через змінні середовища (але інтерактивний режим все ще потрібен):
-    ```sh
-    docker run -it --name svitlobot-monitor \
-        -v /path/to/your/data:/app/data \
-        -v /path/to/your/locales:/app/locales \
-        petrovoronov/svitlobot-monitor:latest \
-        --language uk --group 2 --refresh-interval 5
-    ```
-
 Після першого запуску додаток збереже параметри конфігурації та додаткову інформацію - будь ласка, зупиніть контейнер, натиснувши `Ctrl+C`, і запустіть його знову за допомогою команд з наступного розділу.
 
-#### Перший запуск Docker для роботи як бот Telegram і налаштування всіх основних параметрів конфігурації через змінні середовища
+#### Перший запуск Docker для роботи як бот Telegram
 
-Інтерактивний режим для роботи як бот Telegram не потрібен. Тому перший запуск повинен бути таким:
+Інтерактивний режим для роботи як бот Telegram не потрібен. Але тільки якщо ви передасте всі необхідні параметри конфігурації як змінні середовища під час першого запуску.
+
+Таким чином перший запуск повинен бути таким:
+
 ```sh
 docker run -d --name svitlobot-monitor \
     -v /path/to/your/data:/app/data \
@@ -201,6 +202,16 @@ docker run -d --name svitlobot-monitor \
     petrovoronov/svitlobot-monitor:latest \
     --language uk --group 2 --refresh-interval 5
 ```
+
+Якщо ви не хочете передавати параметри конфігурації як змінні середовища під час першого запуску, ви можете запустити образ Docker в інтерактивному режимі та передати необхідні параметри інтерактивно:
+
+```sh
+docker run -it --name svitlobot-monitor \
+    -v /path/to/your/data:/app/data \
+    -v /path/to/your/locales:/app/locales \
+    petrovoronov/svitlobot-monitor:latest
+```
+
 **Важлива примітка: передайте всі пізніше необхідні параметри командного рядка під час першого запуску!**
 
 Після першого запуску додаток збереже параметри конфігурації та додаткову інформацію. Будь ласка, зупиніть контейнер, натиснувши `Ctrl+C`, і перезапустіть його за допомогою команд із наступного розділу.
@@ -225,7 +236,7 @@ docker stop svitlobot-monitor
 
 Щоб запустити додаток за допомогою Docker Compose, створіть файл `docker-compose.yml` з наступним вмістом:
 
-### У разі роботи як користувач Telegram:
+### У разі роботи як користувач Telegram
 
 ```yaml
 version: '3'
@@ -243,7 +254,7 @@ services:
         command: --as-user --language uk --group 2 --refresh-interval 5
 ```
 
-### У разі роботи як бот Telegram:
+### У разі роботи як бот Telegram
 
 ```yaml
 version: '3'
@@ -279,12 +290,14 @@ docker-compose up -d
 ### Додавання нової мови
 
 Ви можете додати нову мову, створивши новий файл локалізації в каталозі `locales` з кодом мови як назвою файлу (наприклад, `fr.json` для французької). Потім додайте переклади для повідомлень у новий файл.
+
 ```json
 {
     "Group %s - switching to on is started": "Groupe %s - commutation en marche est démarrée",
     "Group %s - switching to off is started": "Groupe %s - commutation à l'arrêt est démarrée",
 }
 ```
+
 Потім ви можете передати код мови як значення параметра `--language` у командному рядку, щоб використовувати нову мову.
 
 ### Файли локалізації для Docker
