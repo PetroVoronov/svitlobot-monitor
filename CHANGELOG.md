@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.5](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.4...v1.5.5) (2024-10-07)
+
+
+### Miscellaneous Chores
+
+* **deps:** Bump telegram from 2.25.11 to 2.25.15 ([476933d](https://github.com/PetroVoronov/svitlobot-monitor/commit/476933d04d57974f356126906c2c243a3c0509ab))
+
 ## [1.5.4](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.3...v1.5.4) (2024-10-07)
 
 ### Continuous Integration
