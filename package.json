@@ -35,7 +35,7 @@
     "@babel/core": "^7.24.9",
     "@babel/eslint-parser": "^7.24.8",
     "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-sonarjs": "^2.0.2",
+    "eslint-plugin-sonarjs": "^2.0.3",
     "globals": "^15.8.0",
     "markdownlint-cli2": "^0.14.0"
   },
