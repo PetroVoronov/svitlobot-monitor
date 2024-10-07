@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.5.4](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.3...v1.5.4) (2024-10-07)
+
+
+### Continuous Integration
+
+* **release-please:** run CHANGELOG.md through markdownlint-cli2 on PR's ([0e670b3](https://github.com/PetroVoronov/svitlobot-monitor/commit/0e670b3beeaf22b547ba74c1388beade6c0d03be))
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** Bump @babel/core from 7.25.2 to 7.25.7 ([4718158](https://github.com/PetroVoronov/svitlobot-monitor/commit/4718158544ccaeba957dbaa4a4fbc4dd587cf269))
+* **deps-dev:** Bump @babel/eslint-parser from 7.25.1 to 7.25.7 ([dd437b8](https://github.com/PetroVoronov/svitlobot-monitor/commit/dd437b86e0b2890c624562d7399caf42f421d7de))
+* **deps-dev:** Bump eslint-plugin-sonarjs from 2.0.2 to 2.0.3 ([4b6b5c1](https://github.com/PetroVoronov/svitlobot-monitor/commit/4b6b5c1580a89380a20b838c9bb6a9ee6d98e351))
+* **deps-dev:** Bump globals from 15.9.0 to 15.10.0 ([122c239](https://github.com/PetroVoronov/svitlobot-monitor/commit/122c23910a4ebf52f62532083af42e34431237d9))
+* **dev:** Add markdownlint-cli2 to improve format of documentation (README's, CHANGELOG) ([0e670b3](https://github.com/PetroVoronov/svitlobot-monitor/commit/0e670b3beeaf22b547ba74c1388beade6c0d03be))
+
+
+### Documentation
+
+* Fix README's and CHANGELOG formatting through markdownlint-cli2 ([0e670b3](https://github.com/PetroVoronov/svitlobot-monitor/commit/0e670b3beeaf22b547ba74c1388beade6c0d03be))
+* Fix README's sections related to the default start mode and first Docker runs ([0e670b3](https://github.com/PetroVoronov/svitlobot-monitor/commit/0e670b3beeaf22b547ba74c1388beade6c0d03be))
+
 ## [1.5.3](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.2...v1.5.3) (2024-10-04)
 
 
