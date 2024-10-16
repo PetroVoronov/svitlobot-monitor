@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.5](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.4...v1.5.5) (2024-10-16)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** Bump @babel/core from 7.25.7 to 7.25.8 ([f476465](https://github.com/PetroVoronov/svitlobot-monitor/commit/f4764653b744cfda288954ebd08ca2be394bb607))
+* **deps-dev:** Bump @babel/eslint-parser from 7.25.7 to 7.25.8 ([4e18db4](https://github.com/PetroVoronov/svitlobot-monitor/commit/4e18db48da4bcbba714951a376345ec74424c6bd))
+* **deps-dev:** Bump globals from 15.10.0 to 15.11.0 ([291eacf](https://github.com/PetroVoronov/svitlobot-monitor/commit/291eacf3ddbd3d602589156c802fd5b860979c57))
+* **deps:** Bump telegram from 2.25.11 to 2.25.15 ([476933d](https://github.com/PetroVoronov/svitlobot-monitor/commit/476933d04d57974f356126906c2c243a3c0509ab))
+
 ## [1.5.4](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.3...v1.5.4) (2024-10-07)
 
 ### Continuous Integration
