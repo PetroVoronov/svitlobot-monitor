@@ -2,7 +2,6 @@
 
 ## [1.5.5](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.4...v1.5.5) (2024-10-16)
 
-
 ### Miscellaneous Chores
 
 * **deps-dev:** Bump @babel/core from 7.25.7 to 7.25.8 ([f476465](https://github.com/PetroVoronov/svitlobot-monitor/commit/f4764653b744cfda288954ebd08ca2be394bb607))
