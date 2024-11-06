@@ -2,12 +2,10 @@
 
 ## [1.5.6](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.5...v1.5.6) (2024-11-06)
 
-
 ### Code Refactoring
 
 * **cache:** refactor code of Cache class with type conversion and event reactions ([adb9825](https://github.com/PetroVoronov/svitlobot-monitor/commit/adb98256bb4ff46729599549f725cf081fe098b0))
 * **logging:** refactor code of SecuredLogger with sensitive data masking ([adb9825](https://github.com/PetroVoronov/svitlobot-monitor/commit/adb98256bb4ff46729599549f725cf081fe098b0))
-
 
 ### Miscellaneous Chores
 
@@ -18,7 +16,6 @@
 * **deps:** Bump node from 22-alpine to 23-alpine ([2482e8a](https://github.com/PetroVoronov/svitlobot-monitor/commit/2482e8ab9c35b559800f069b506985194699adb1))
 * **deps:** Bump telegram from 2.25.15 to 2.26.6 ([a4a726f](https://github.com/PetroVoronov/svitlobot-monitor/commit/a4a726fb7b0fa3e06481357b751d96f8bfd0eb6e))
 * **dev:** add Jest configuration and dependency ([adb9825](https://github.com/PetroVoronov/svitlobot-monitor/commit/adb98256bb4ff46729599549f725cf081fe098b0))
-
 
 ### Tests
 
