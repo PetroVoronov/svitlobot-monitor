@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.5.6](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.5...v1.5.6) (2024-11-06)
+
+### Code Refactoring
+
+* **cache:** refactor code of Cache class with type conversion and event reactions ([adb9825](https://github.com/PetroVoronov/svitlobot-monitor/commit/adb98256bb4ff46729599549f725cf081fe098b0))
+* **logging:** refactor code of SecuredLogger with sensitive data masking ([adb9825](https://github.com/PetroVoronov/svitlobot-monitor/commit/adb98256bb4ff46729599549f725cf081fe098b0))
+
+### Miscellaneous Chores
+
+* **deps-dev:** Bump @babel/core from 7.25.8 to 7.26.0 ([1f607b6](https://github.com/PetroVoronov/svitlobot-monitor/commit/1f607b60cc19e06f8f0e46ce8101b373d2183156))
+* **deps-dev:** Bump @babel/eslint-parser from 7.25.8 to 7.25.9 ([cf2de8b](https://github.com/PetroVoronov/svitlobot-monitor/commit/cf2de8bbd037b8d3dc665caaeb8f39510c5acb97))
+* **deps-dev:** Bump eslint-plugin-sonarjs from 2.0.3 to 2.0.4 ([3e7c6fb](https://github.com/PetroVoronov/svitlobot-monitor/commit/3e7c6fb77afff93e678d65c971f3cea8bb20a864))
+* **deps:** Bump grammy from 1.30.0 to 1.31.0 ([ba5df70](https://github.com/PetroVoronov/svitlobot-monitor/commit/ba5df70ad52f9b40dc760f8171d96ffa59f841d6))
+* **deps:** Bump node from 22-alpine to 23-alpine ([2482e8a](https://github.com/PetroVoronov/svitlobot-monitor/commit/2482e8ab9c35b559800f069b506985194699adb1))
+* **deps:** Bump telegram from 2.25.15 to 2.26.6 ([a4a726f](https://github.com/PetroVoronov/svitlobot-monitor/commit/a4a726fb7b0fa3e06481357b751d96f8bfd0eb6e))
+* **dev:** add Jest configuration and dependency ([adb9825](https://github.com/PetroVoronov/svitlobot-monitor/commit/adb98256bb4ff46729599549f725cf081fe098b0))
+
+### Tests
+
+* **cache:** add some tests ([adb9825](https://github.com/PetroVoronov/svitlobot-monitor/commit/adb98256bb4ff46729599549f725cf081fe098b0))
+* **logging:** add some tests ([adb9825](https://github.com/PetroVoronov/svitlobot-monitor/commit/adb98256bb4ff46729599549f725cf081fe098b0))
+
 ## [1.5.5](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.4...v1.5.5) (2024-10-16)
 
 ### Miscellaneous Chores
