@@ -24,8 +24,7 @@
     "yargs": "^17.7.2"
   },
   "scripts": {
-    "tag": "git tag -a v$npm_package_version -m \"Version $npm_package_version\"",
-    "tag-push": "git push origin --tags",
+    "test": "jest",
     "lint": "eslint .",
     "start": "node src/index.js",
     "debug": "node --env-file=.env src/index.js --debug",
@@ -37,6 +36,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-sonarjs": "^2.0.4",
     "globals": "^15.11.0",
+    "jest": "^29.7.0",
     "markdownlint-cli2": "^0.14.0"
   },
   "overrides": {
