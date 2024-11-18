@@ -13,6 +13,10 @@ const i18n = require('./modules/i18n/i18n.config');
 const axios = require('axios');
 const fs = require('node:fs');
 
+let tendencyDetectPeriod = 5;
+let tendencyDetectStableInterval = 3;
+let tendencyDetectDelta = 3;
+
 const options = yargs
   .usage('Usage: $0 [options]')
   .option('as-user', {
@@ -40,6 +44,30 @@ const options = yargs
     describe: 'Value in percentage, to react on decrease of percentage',
     type: 'number',
     default: 80,
+    demandOption: false,
+  })
+  .option('tendency-detect-new', {
+    describe: 'Detect the tendency by new algorithm',
+    type: 'boolean',
+    default: false,
+    demandOption: false,
+  })
+  .option('tendency-detect-period', {
+    describe: 'Count of measures to detect the tendency',
+    type: 'number',
+    default: 5,
+    demandOption: false,
+  })
+  .option('tendency-detect-stable-interval', {
+    describe: 'Count of measures to detect the stable tendency. Should be less than "tendency-detect-period"',
+    type: 'number',
+    default: 3,
+    demandOption: false,
+  })
+  .option('tendency-detect-delta', {
+    describe: 'Delta between the measures to detect the tendency. In percentage, to react on decrease of percentage',
+    type: 'number',
+    default: 3,
     demandOption: false,
   })
   .option('min', {
@@ -132,6 +160,19 @@ const options = yargs
 if (options.debug) {
   log.setLevel('debug');
 }
+
+let tendencyDetectMode =
+  options.tendencyDetectNew ||
+  options.tendencyDetectPeriod !== tendencyDetectPeriod ||
+  options.tendencyDetectStableInterval !== tendencyDetectStableInterval ||
+  options.tendencyDetectDelta !== tendencyDetectDelta;
+
+if (tendencyDetectMode) {
+  tendencyDetectPeriod = options.tendencyDetectPeriod;
+  tendencyDetectStableInterval = options.tendencyDetectStableInterval;
+  tendencyDetectDelta = options.tendencyDetectDelta;
+}
+
 log.appendMaskWord('apiId', 'apiHash', 'phone');
 
 log.info(`Starting ${scriptName} v${scriptVersion}`);
@@ -216,7 +257,16 @@ if (typeof options.nightTime === 'string' && options.nightTime.length > 0) {
 log.info(`As user: ${options.asUser}`);
 log.info(`Group ID: ${options.group}`);
 log.info(`Refresh interval: ${options.refreshInterval} minutes`);
-log.info('Step interval pairs: ' + stringify(stepIntervalPairs.map((pair) => `${pair.valueDelta}% : ${pair.timeInterval / 60000} min.`)));
+if (tendencyDetectMode) {
+  log.info(`Tendency detect mode is enabled`);
+  log.info(`Tendency detect period: ${options.tendencyDetectPeriod}`);
+  log.info(`Tendency detect stable interval: ${options.tendencyDetectStableInterval}`);
+  log.info(`Tendency detect delta: ${options.tendencyDetectDelta}`);
+}
+{
+  log.info(`Step interval mode is enabled`);
+  log.info('Step interval pairs: ' + stringify(stepIntervalPairs.map((pair) => `${pair.valueDelta}% : ${pair.timeInterval / 60000} min.`)));
+}
 log.info(`Period of fixed tendency: ${options.periodOfFixedTendency} minutes`);
 log.info(`Max percentage to react down: ${options.maxPercentageToReactDown}%`);
 log.info(`Min percentage to react up: ${options.minPercentageToReactUp}%`);
@@ -581,85 +631,96 @@ function telegramUnpinMessage(target, messageId) {
   });
 }
 
-function telegramMessageOnChange(startedSwitchingOn) {
-  const timeStampOptions = {timeStyle: 'short', dateStyle: 'short'};
-  if (options.timeZone) {
-    timeStampOptions.timeZone = options.timeZone;
-  }
-  const timeStamp = new Date().toLocaleString(options.language, timeStampOptions);
-  const messageText =
-    (options.addTimestamp ? timeStamp + ': ' : '') +
-    i18n.__(startedSwitchingOn ? 'Group %s - switching to on is started' : 'Group %s - switching to off is started', groupId);
-
-  const currentHour = options.timeZone
-    ? new Date().toLocaleString(options.language, {timeZone: options.timeZone, hour: 'numeric', hour12: false})
-    : new Date().getHours();
-
-  const silentMode =
-    nightTimeInterval.length === 2 &&
-    ((nightTimeInterval[1] > nightTimeInterval[0] && currentHour >= nightTimeInterval[0] && currentHour < nightTimeInterval[1]) ||
-      (nightTimeInterval[1] < nightTimeInterval[0] && (currentHour >= nightTimeInterval[0] || currentHour < nightTimeInterval[1])));
-
-  log.info(`${messageText}`);
-  let telegramMessage;
-  let telegramTarget;
-  let messageOptions;
-  if (telegramClient !== null) {
-    if (options.asUser === true) {
-      telegramMessage = {
-        message: messageText,
-      };
-      if (telegramTopicId > 0) {
-        telegramMessage.replyTo = telegramTopicId;
-      }
-      if (silentMode === true) {
-        telegramMessage.silent = true;
-      }
-      telegramTarget = targetEntity;
-    } else {
-      telegramMessage = messageText;
-      telegramTarget = telegramChatId;
-      messageOptions = {
-        parse_mode: parseMode,
-      };
-      if (telegramTopicId > 0) {
-        messageOptions.message_thread_id = telegramTopicId;
-      }
-      if (silentMode === true) {
-        messageOptions.disable_notification = true;
-      }
+function tendencyIsChanged(tendencyNew, percentage, percentageDelta) {
+  if (tendencyNew !== '') {
+    let startedSwitchingOn = tendencyNew === tendencyOn;
+    tendency = tendencyNew;
+    tendencyTime = new Date();
+    const timeStampOptions = {timeStyle: 'short', dateStyle: 'short'};
+    tendencyTime = new Date();
+    if (options.timeZone) {
+      timeStampOptions.timeZone = options.timeZone;
     }
-    telegramSendMessage(telegramTarget, telegramMessage, messageOptions)
-      .then((messageId) => {
-        log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
-        const previousMessageId = cache.getItem('lastMessageId');
-        cache.setItem('lastMessageId', messageId);
-        if (options.pinMessage) {
-          telegramPinMessage(telegramTarget, messageId)
-            .then(() => {
-              log.debug(`Telegram message with id: ${messageId} pinned to "${targetTitle}" with topic ${telegramTopicId}`);
-              if (options.unpinPrevious) {
-                if (previousMessageId !== undefined && previousMessageId !== null) {
-                  telegramUnpinMessage(telegramTarget, previousMessageId)
-                    .then(() => {
-                      log.debug(
-                        `Telegram message with id: ${previousMessageId} unpinned from "${targetTitle}" with topic ${telegramTopicId}`,
-                      );
-                    })
-                    .catch((error) => {
-                      log.error(`Telegram message unpin error: ${error}`);
-                    });
-                }
-              }
-            })
-            .catch((error) => {
-              log.error(`Telegram message pin error: ${error}`);
-            });
+    const timeStamp = new Date().toLocaleString(options.language, timeStampOptions);
+    const messageText =
+      (options.addTimestamp ? timeStamp + ': ' : '') +
+      i18n.__(
+        `Group %s - switching to ${startedSwitchingOn ? 'on' : 'off'} is started. Currently: %s, delta: %s.`,
+        groupId,
+        `${percentage}%`,
+        `${percentageDelta}%`,
+      );
+
+    const currentHour = options.timeZone
+      ? new Date().toLocaleString(options.language, {timeZone: options.timeZone, hour: 'numeric', hour12: false})
+      : new Date().getHours();
+
+    const silentMode =
+      nightTimeInterval.length === 2 &&
+      ((nightTimeInterval[1] > nightTimeInterval[0] && currentHour >= nightTimeInterval[0] && currentHour < nightTimeInterval[1]) ||
+        (nightTimeInterval[1] < nightTimeInterval[0] && (currentHour >= nightTimeInterval[0] || currentHour < nightTimeInterval[1])));
+
+    log.info(`${messageText}`);
+    let telegramMessage;
+    let telegramTarget;
+    let messageOptions;
+    if (telegramClient !== null) {
+      if (options.asUser === true) {
+        telegramMessage = {
+          message: messageText,
+        };
+        if (telegramTopicId > 0) {
+          telegramMessage.replyTo = telegramTopicId;
         }
-      })
-      .catch((error) => {
-        log.error(`Telegram message error: ${error}`);
-      });
+        if (silentMode === true) {
+          telegramMessage.silent = true;
+        }
+        telegramTarget = targetEntity;
+      } else {
+        telegramMessage = messageText;
+        telegramTarget = telegramChatId;
+        messageOptions = {
+          parse_mode: parseMode,
+        };
+        if (telegramTopicId > 0) {
+          messageOptions.message_thread_id = telegramTopicId;
+        }
+        if (silentMode === true) {
+          messageOptions.disable_notification = true;
+        }
+      }
+      telegramSendMessage(telegramTarget, telegramMessage, messageOptions)
+        .then((messageId) => {
+          log.debug(`Telegram message sent to "${targetTitle}" with topic ${telegramTopicId}`);
+          const previousMessageId = cache.getItem('lastMessageId');
+          cache.setItem('lastMessageId', messageId);
+          if (options.pinMessage) {
+            telegramPinMessage(telegramTarget, messageId)
+              .then(() => {
+                log.debug(`Telegram message with id: ${messageId} pinned to "${targetTitle}" with topic ${telegramTopicId}`);
+                if (options.unpinPrevious) {
+                  if (previousMessageId !== undefined && previousMessageId !== null) {
+                    telegramUnpinMessage(telegramTarget, previousMessageId)
+                      .then(() => {
+                        log.debug(
+                          `Telegram message with id: ${previousMessageId} unpinned from "${targetTitle}" with topic ${telegramTopicId}`,
+                        );
+                      })
+                      .catch((error) => {
+                        log.error(`Telegram message unpin error: ${error}`);
+                      });
+                  }
+                }
+              })
+              .catch((error) => {
+                log.error(`Telegram message pin error: ${error}`);
+              });
+          }
+        })
+        .catch((error) => {
+          log.error(`Telegram message error: ${error}`);
+        });
+    }
   }
 }
 
@@ -675,83 +736,136 @@ function dataClean(data) {
   }
 }
 
+function tendencyFromDelta(delta) {
+  if (delta > 0) {
+    return tendencyOn;
+  } else if (delta < 0) {
+    return tendencyOff;
+  } else {
+    return '';
+  }
+}
+
 function checkGroupTendency() {
-  axios.get(svitloBotAPI).then((response) => {
-    const data = response.data,
-      stats = {
-        on: 0,
-        off: 0,
-        total: 0,
-        percentage: 0,
-        timeStamp: new Date(),
-      };
-    if (typeof data === 'string' && data.length > 0) {
-      const lines = data.split('\n'),
-        groupData = [];
-      lines.forEach((line) => {
-        const items = line.split(';&&&;');
-        if (
-          items.length === 12 &&
-          items[3].startsWith(cityId) &&
-          items[9] === groupId &&
-          '12'.includes(items[1]) &&
-          wrongGroups.includes(items[3]) === false
-        ) {
-          groupData.push({
-            on: items[1] === '1',
-            timeStamp: new Date(items[2]).getTime(),
-          });
-        }
-      });
-      const groupDataOn = dataClean(groupData.filter((item) => item.on === true)),
-        groupDataOff = dataClean(groupData.filter((item) => item.on === false));
-      stats.on = groupDataOn.length;
-      stats.off = groupDataOff.length;
-      stats.total = stats.on + stats.off;
-      stats.percentage = stats.total > 0 ? Math.round((stats.on / stats.total) * 100) : 0;
-      if (stats.total !== 0) {
-        log.debug(
-          `For group ${groupId} - "on" percentage is ${stats.percentage}%, the other statistics are: ${stats.on} "on", ${stats.off} "off", ${stats.total} total`,
-        );
-        const timeForDateBack = new Date().getTime();
-        if (tendency !== '' && new Date(timeForDateBack - tendencyPeriod).getTime() > tendencyTime.getTime()) {
-          tendency = '';
-        }
-        stepIntervalPairs.some((pair) => {
-          let result = false;
-          const dateBack = new Date(timeForDateBack - pair.timeInterval * 1.01),
-            statsToCompare = statsBuffer.find((item) => item.timeStamp.getTime() >= dateBack.getTime());
-          if (statsToCompare !== undefined) {
-            const percentageDelta = stats.percentage - statsToCompare.percentage,
-              percentageDeltaAbs = Math.abs(percentageDelta);
-            if (percentageDeltaAbs >= pair.valueDelta) {
-              if (tendency !== tendencyOn && percentageDelta > 0 && stats.percentage >= options.minPercentageToReactUp) {
-                tendency = tendencyOn;
-                tendencyTime = new Date();
-                telegramMessageOnChange(true);
-              } else if (tendency !== tendencyOff && percentageDelta < 0 && stats.percentage <= options.maxPercentageToReactDown) {
-                tendency = tendencyOff;
-                tendencyTime = new Date();
-                telegramMessageOnChange(false);
+  axios
+    .get(svitloBotAPI)
+    .then((response) => {
+      const data = response.data,
+        stats = {
+          on: 0,
+          off: 0,
+          total: 0,
+          percentage: 0,
+          timeStamp: new Date(),
+        };
+      if (typeof data === 'string' && data.length > 0) {
+        const lines = data.split('\n'),
+          groupData = [];
+        lines.forEach((line) => {
+          const items = line.split(';&&&;');
+          if (
+            items.length === 12 &&
+            items[3].startsWith(cityId) &&
+            items[9] === groupId &&
+            '12'.includes(items[1]) &&
+            wrongGroups.includes(items[3]) === false
+          ) {
+            groupData.push({
+              on: items[1] === '1',
+              timeStamp: new Date(items[2]).getTime(),
+            });
+          }
+        });
+        const groupDataOn = dataClean(groupData.filter((item) => item.on === true)),
+          groupDataOff = dataClean(groupData.filter((item) => item.on === false));
+        stats.on = groupDataOn.length;
+        stats.off = groupDataOff.length;
+        stats.total = stats.on + stats.off;
+        stats.percentage = stats.total > 0 ? Math.round((stats.on / stats.total) * 100) : 0;
+        if (stats.total !== 0) {
+          log.debug(
+            `For group ${groupId} - "on" percentage is ${stats.percentage}%, the other statistics are: ${stats.on} "on", ${stats.off} "off", ${stats.total} total`,
+          );
+          if (tendencyDetectMode) {
+            statsBuffer.push(stats.percentage);
+            if (statsBuffer.length > tendencyDetectPeriod) {
+              statsBuffer.shift();
+            }
+            if (statsBuffer.length >= tendencyDetectStableInterval) {
+              let tendencyStableCount = 0;
+              let tendencyDelta = 0;
+              let tendencyCurrent = '';
+              for (let i = 1; i < statsBuffer.length - 2; i++) {
+                const tendencyDeltaNext = statsBuffer[i + 1] - statsBuffer[i];
+                const tendencyNext = tendencyFromDelta(tendencyDeltaNext);
+                if (tendencyCurrent === tendencyNext && tendencyCurrent !== '') {
+                  tendencyStableCount++;
+                  tendencyDelta += tendencyDeltaNext;
+                  if (tendencyStableCount >= tendencyDetectStableInterval) {
+                    break;
+                  }
+                } else {
+                  tendencyStableCount = 0;
+                  tendencyCurrent = tendencyNext;
+                  tendencyDelta = 0;
+                }
               }
-              result = true;
+              if (tendencyCurrent === '') {
+                tendencyDelta =
+                  statsBuffer.reduce((acc, item, index) => {
+                    if (index > 0) {
+                      return acc + item - statsBuffer[index - 1];
+                    } else {
+                      return acc;
+                    }
+                  }, 0) /
+                  (statsBuffer.length - 1);
+                if (Math.abs(tendencyDelta) >= tendencyDetectDelta) {
+                  tendencyCurrent = tendencyFromDelta(tendencyDelta);
+                }
+              }
+              if (tendencyCurrent !== '' && tendency !== tendencyCurrent) {
+                tendencyIsChanged(tendency, stats.percentage, tendencyDelta);
+              }
+            }
+          } else {
+            const timeForDateBack = new Date().getTime();
+            if (tendency !== '' && new Date(timeForDateBack - tendencyPeriod).getTime() > tendencyTime.getTime()) {
+              tendency = '';
+            }
+            stepIntervalPairs.some((pair) => {
+              let result = false;
+              const dateBack = new Date(timeForDateBack - pair.timeInterval * 1.01),
+                statsToCompare = statsBuffer.find((item) => item.timeStamp.getTime() >= dateBack.getTime());
+              if (statsToCompare !== undefined) {
+                const percentageDelta = stats.percentage - statsToCompare.percentage,
+                  percentageDeltaAbs = Math.abs(percentageDelta);
+                if (percentageDeltaAbs >= pair.valueDelta) {
+                  if (tendency !== tendencyOn && percentageDelta > 0 && stats.percentage >= options.minPercentageToReactUp) {
+                    tendencyIsChanged(tendencyOn, stats.percentage, percentageDeltaAbs);
+                  } else if (tendency !== tendencyOff && percentageDelta < 0 && stats.percentage <= options.maxPercentageToReactDown) {
+                    tendencyIsChanged(tendencyOff, stats.percentage, percentageDeltaAbs);
+                  }
+                  result = true;
+                }
+              }
+              return result;
+            });
+            statsBuffer.push(stats);
+            if (statsBuffer.length > statsBufferMaxLength + 1) {
+              statsBuffer.shift();
             }
           }
-          return result;
-        });
-        statsBuffer.push(stats);
-        if (statsBuffer.length > statsBufferMaxLength + 1) {
-          statsBuffer.shift();
+        } else {
+          log.warn(`No data found for group ${groupId}!`);
         }
       } else {
-        log.warn(`No data found for group ${groupId}!`);
+        log.warn('No data received from SvitloBot API!');
       }
-    } else {
-      log.warn('No data received from SvitloBot API!');
-    }
-  }).catch((error) => {
-    log.error(`Error: ${error}`);
-  });
+    })
+    .catch((error) => {
+      log.error(`Error: ${error}`);
+    });
 }
 
 function startCheckGroupTendency() {
