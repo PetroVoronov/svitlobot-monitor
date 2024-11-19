@@ -46,6 +46,13 @@ const options = yargs
     default: 80,
     demandOption: false,
   })
+  .option('min', {
+    alias: 'min-percentage-to-react-up',
+    describe: 'Value in percentage, to react on increase of percentage',
+    type: 'number',
+    default: 30,
+    demandOption: false,
+  })
   .option('tendency-detect-new', {
     describe: 'Detect the tendency by new algorithm',
     type: 'boolean',
@@ -64,23 +71,16 @@ const options = yargs
     default: 3,
     demandOption: false,
   })
-  .option('tendency-detect-delta', {
-    describe: 'Delta between the measures to detect the tendency. In percentage, to react on decrease of percentage',
-    type: 'number',
-    default: 3,
-    demandOption: false,
-  })
-  .option('min', {
-    alias: 'min-percentage-to-react-up',
-    describe: 'Value in percentage, to react on increase of percentage',
-    type: 'number',
-    default: 30,
-    demandOption: false,
-  })
   .option('period-of-fixed-tendency', {
     describe: 'Period in minutes, when the tendency is usually not changed on opposite',
     type: 'number',
     default: 60,
+    demandOption: false,
+  })
+  .option('tendency-detect-delta', {
+    describe: 'Delta between the measures to detect the tendency. In percentage, to react on change of percentage, during the detect period',
+    type: 'number',
+    default: 5,
     demandOption: false,
   })
   .option('r', {
@@ -788,17 +788,17 @@ function checkGroupTendency() {
           );
           if (tendencyDetectNewModeOn) {
             statsBuffer.push(stats.percentage);
-            if (statsBuffer.length > tendencyDetectNewPeriod) {
+            if (statsBuffer.length > tendencyDetectNewPeriod + 1) {
               statsBuffer.shift();
             }
-            if (statsBuffer.length >= tendencyDetectNewStableInterval) {
+            if (statsBuffer.length > tendencyDetectNewStableInterval) {
               let tendencyStableCount = 0;
               let tendencyDelta = 0;
               let tendencyCurrent = '';
-              for (let i = 1; i < statsBuffer.length - 2; i++) {
+              for (let i = 0; i < statsBuffer.length - 2; i++) {
                 const tendencyDeltaNext = statsBuffer[i + 1] - statsBuffer[i];
                 const tendencyNext = tendencyFromDelta(tendencyDeltaNext);
-                if (tendencyCurrent === tendencyNext && tendencyCurrent !== '') {
+                if (tendencyCurrent === tendencyNext && tendencyCurrent !== '' || tendencyCurrent === '' && tendencyNext !== tendencyCurrent) {
                   tendencyStableCount++;
                   tendencyDelta += tendencyDeltaNext;
                   if (tendencyStableCount >= tendencyDetectNewStableInterval) {
@@ -818,10 +818,13 @@ function checkGroupTendency() {
                     } else {
                       return acc;
                     }
-                  }, 0) / tendencyStableCount;
+                  }, 0);
                 if (Math.abs(tendencyDelta) >= tendencyDetectNewDelta) {
                   tendencyCurrent = tendencyFromDelta(tendencyDelta);
+                  tendencyDelta = tendencyDelta / (statsBuffer.length - 1);
                 }
+              } else {
+                tendencyDelta = tendencyDeltaNext;
               }
               if (tendencyCurrent !== '' && tendency !== tendencyCurrent) {
                 tendencyIsChanged(tendency, stats.percentage, tendencyDelta);
