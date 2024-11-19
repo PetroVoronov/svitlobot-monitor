@@ -13,9 +13,9 @@ const i18n = require('./modules/i18n/i18n.config');
 const axios = require('axios');
 const fs = require('node:fs');
 
-let tendencyDetectPeriod = 5;
-let tendencyDetectStableInterval = 3;
-let tendencyDetectDelta = 3;
+let tendencyDetectNewPeriod = 5;
+let tendencyDetectNewStableInterval = 3;
+let tendencyDetectNewDelta = 3;
 
 const options = yargs
   .usage('Usage: $0 [options]')
@@ -161,16 +161,16 @@ if (options.debug) {
   log.setLevel('debug');
 }
 
-let tendencyDetectMode =
+let tendencyDetectNewModeOn =
   options.tendencyDetectNew ||
-  options.tendencyDetectPeriod !== tendencyDetectPeriod ||
-  options.tendencyDetectStableInterval !== tendencyDetectStableInterval ||
-  options.tendencyDetectDelta !== tendencyDetectDelta;
+  options.tendencyDetectPeriod !== tendencyDetectNewPeriod ||
+  options.tendencyDetectStableInterval !== tendencyDetectNewStableInterval ||
+  options.tendencyDetectDelta !== tendencyDetectNewDelta;
 
-if (tendencyDetectMode) {
-  tendencyDetectPeriod = options.tendencyDetectPeriod;
-  tendencyDetectStableInterval = options.tendencyDetectStableInterval;
-  tendencyDetectDelta = options.tendencyDetectDelta;
+if (tendencyDetectNewModeOn) {
+  tendencyDetectNewPeriod = options.tendencyDetectPeriod;
+  tendencyDetectNewStableInterval = options.tendencyDetectStableInterval;
+  tendencyDetectNewDelta = options.tendencyDetectDelta;
 }
 
 log.appendMaskWord('apiId', 'apiHash', 'phone');
@@ -257,14 +257,14 @@ if (typeof options.nightTime === 'string' && options.nightTime.length > 0) {
 log.info(`As user: ${options.asUser}`);
 log.info(`Group ID: ${options.group}`);
 log.info(`Refresh interval: ${options.refreshInterval} minutes`);
-if (tendencyDetectMode) {
-  log.info(`Tendency detect mode is enabled`);
+if (tendencyDetectNewModeOn) {
+  log.info(`Tendency detect new mode is enabled`);
   log.info(`Tendency detect period: ${options.tendencyDetectPeriod}`);
   log.info(`Tendency detect stable interval: ${options.tendencyDetectStableInterval}`);
   log.info(`Tendency detect delta: ${options.tendencyDetectDelta}`);
 }
 {
-  log.info(`Step interval mode is enabled`);
+  log.info(`Tendency detect step interval mode is enabled`);
   log.info('Step interval pairs: ' + stringify(stepIntervalPairs.map((pair) => `${pair.valueDelta}% : ${pair.timeInterval / 60000} min.`)));
 }
 log.info(`Period of fixed tendency: ${options.periodOfFixedTendency} minutes`);
@@ -786,12 +786,12 @@ function checkGroupTendency() {
           log.debug(
             `For group ${groupId} - "on" percentage is ${stats.percentage}%, the other statistics are: ${stats.on} "on", ${stats.off} "off", ${stats.total} total`,
           );
-          if (tendencyDetectMode) {
+          if (tendencyDetectNewModeOn) {
             statsBuffer.push(stats.percentage);
-            if (statsBuffer.length > tendencyDetectPeriod) {
+            if (statsBuffer.length > tendencyDetectNewPeriod) {
               statsBuffer.shift();
             }
-            if (statsBuffer.length >= tendencyDetectStableInterval) {
+            if (statsBuffer.length >= tendencyDetectNewStableInterval) {
               let tendencyStableCount = 0;
               let tendencyDelta = 0;
               let tendencyCurrent = '';
@@ -801,7 +801,7 @@ function checkGroupTendency() {
                 if (tendencyCurrent === tendencyNext && tendencyCurrent !== '') {
                   tendencyStableCount++;
                   tendencyDelta += tendencyDeltaNext;
-                  if (tendencyStableCount >= tendencyDetectStableInterval) {
+                  if (tendencyStableCount >= tendencyDetectNewStableInterval) {
                     break;
                   }
                 } else {
@@ -818,9 +818,8 @@ function checkGroupTendency() {
                     } else {
                       return acc;
                     }
-                  }, 0) /
-                  (statsBuffer.length - 1);
-                if (Math.abs(tendencyDelta) >= tendencyDetectDelta) {
+                  }, 0) / tendencyStableCount;
+                if (Math.abs(tendencyDelta) >= tendencyDetectNewDelta) {
                   tendencyCurrent = tendencyFromDelta(tendencyDelta);
                 }
               }
