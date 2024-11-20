@@ -71,16 +71,17 @@ const options = yargs
     default: 3,
     demandOption: false,
   })
+  .option('tendency-detect-delta', {
+    describe:
+      'Delta between the measures to detect the tendency. In percentage, to react on change of percentage, during the detect period',
+    type: 'number',
+    default: 5,
+    demandOption: false,
+  })
   .option('period-of-fixed-tendency', {
     describe: 'Period in minutes, when the tendency is usually not changed on opposite',
     type: 'number',
     default: 60,
-    demandOption: false,
-  })
-  .option('tendency-detect-delta', {
-    describe: 'Delta between the measures to detect the tendency. In percentage, to react on change of percentage, during the detect period',
-    type: 'number',
-    default: 5,
     demandOption: false,
   })
   .option('r', {
@@ -262,7 +263,7 @@ if (tendencyDetectNewModeOn) {
   log.info(`Tendency detect period: ${options.tendencyDetectPeriod}`);
   log.info(`Tendency detect stable interval: ${options.tendencyDetectStableInterval}`);
   log.info(`Tendency detect delta: ${options.tendencyDetectDelta}`);
-}
+} else
 {
   log.info(`Tendency detect step interval mode is enabled`);
   log.info('Step interval pairs: ' + stringify(stepIntervalPairs.map((pair) => `${pair.valueDelta}% : ${pair.timeInterval / 60000} min.`)));
@@ -828,6 +829,7 @@ function checkGroupTendency() {
               }
               if (tendencyCurrent !== '' && tendency !== tendencyCurrent) {
                 tendencyIsChanged(tendency, stats.percentage, tendencyDelta);
+                statsBuffer.splice(-tendencyDetectNewStableInterval + 1);
               }
             }
           } else {
