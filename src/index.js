@@ -828,8 +828,8 @@ function checkGroupTendency() {
                 tendencyDelta = tendencyDeltaNext;
               }
               if (tendencyCurrent !== '' && tendency !== tendencyCurrent) {
-                tendencyIsChanged(tendency, stats.percentage, tendencyDelta);
-                statsBuffer.splice(-tendencyDetectNewStableInterval + 1);
+                tendencyIsChanged(tendencyCurrent, stats.percentage, tendencyDelta);
+                statsBuffer.splice(0, statsBuffer.length - tendencyDetectNewStableInterval + 1);
               }
             }
           } else {
