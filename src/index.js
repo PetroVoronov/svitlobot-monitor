@@ -632,7 +632,7 @@ function telegramUnpinMessage(target, messageId) {
   });
 }
 
-function tendencyIsChanged(tendencyNew, percentage, percentageDelta) {
+function tendencyIsChanged(tendencyNew, percentage, percentageDelta, intervals = 1) {
   if (tendencyNew !== '') {
     let startedSwitchingOn = tendencyNew === tendencyOn;
     tendency = tendencyNew;
@@ -646,10 +646,11 @@ function tendencyIsChanged(tendencyNew, percentage, percentageDelta) {
     const messageText =
       (options.addTimestamp ? timeStamp + ': ' : '') +
       i18n.__(
-        `Group %s - switching to ${startedSwitchingOn ? 'on' : 'off'} is started. Currently: %s, delta: %s.`,
+        `Group %s - switching to ${startedSwitchingOn ? 'on' : 'off'} is started. Currently: %s, delta: %s in %s interval(s).`,
         groupId,
         `${percentage}%`,
         `${percentageDelta}%`,
+        intervals,
       );
 
     const currentHour = options.timeZone
@@ -792,11 +793,11 @@ function checkGroupTendency() {
             if (statsBuffer.length > tendencyDetectNewPeriod + 1) {
               statsBuffer.shift();
             }
-            if (statsBuffer.length > tendencyDetectNewStableInterval) {
+            if (statsBuffer.length > 1) {
               let tendencyStableCount = 0;
               let tendencyDelta = 0;
               let tendencyCurrent = '';
-              for (let i = 0; i < statsBuffer.length - 2; i++) {
+              for (let i = 0; i < statsBuffer.length - 1; i++) {
                 const tendencyDeltaNext = statsBuffer[i + 1] - statsBuffer[i];
                 const tendencyNext = tendencyFromDelta(tendencyDeltaNext);
                 if (tendencyCurrent === tendencyNext && tendencyCurrent !== '' || tendencyCurrent === '' && tendencyNext !== tendencyCurrent) {
@@ -811,6 +812,9 @@ function checkGroupTendency() {
                   tendencyDelta = 0;
                 }
               }
+              if (tendencyStableCount < tendencyDetectNewStableInterval) {
+                tendencyCurrent = '';
+              }
               if (tendencyCurrent === '') {
                 tendencyDelta =
                   statsBuffer.reduce((acc, item, index) => {
@@ -822,13 +826,12 @@ function checkGroupTendency() {
                   }, 0);
                 if (Math.abs(tendencyDelta) >= tendencyDetectNewDelta) {
                   tendencyCurrent = tendencyFromDelta(tendencyDelta);
-                  tendencyDelta = tendencyDelta / (statsBuffer.length - 1);
+                  tendencyStableCount = statsBuffer.length - 1;
                 }
-              } else {
-                tendencyDelta = tendencyDeltaNext;
               }
               if (tendencyCurrent !== '' && tendency !== tendencyCurrent) {
-                tendencyIsChanged(tendencyCurrent, stats.percentage, tendencyDelta);
+                  tendencyStableCount = statsBuffer.length - 1;
+                tendencyIsChanged(tendencyCurrent, stats.percentage, tendencyDelta, tendencyStableCount);
                 statsBuffer.splice(0, statsBuffer.length - tendencyDetectNewStableInterval + 1);
               }
             }
@@ -839,16 +842,22 @@ function checkGroupTendency() {
             }
             stepIntervalPairs.some((pair) => {
               let result = false;
-              const dateBack = new Date(timeForDateBack - pair.timeInterval * 1.01),
-                statsToCompare = statsBuffer.find((item) => item.timeStamp.getTime() >= dateBack.getTime());
-              if (statsToCompare !== undefined) {
-                const percentageDelta = stats.percentage - statsToCompare.percentage,
-                  percentageDeltaAbs = Math.abs(percentageDelta);
+              const dateBack = new Date(timeForDateBack - pair.timeInterval * 1.01);
+              const statsToCompareIndex = statsBuffer.findIndex((item) => item.timeStamp.getTime() >= dateBack.getTime());
+              if (statsToCompareIndex >= 0) {
+                const statsToCompare = statsBuffer[statsToCompareIndex];
+                const percentageDelta = stats.percentage - statsToCompare.percentage;
+                const percentageDeltaAbs = Math.abs(percentageDelta);
                 if (percentageDeltaAbs >= pair.valueDelta) {
+                  const statsIntervals = statsBuffer.length - statsToCompareIndex + 1;
+                  let newTendency = '';
                   if (tendency !== tendencyOn && percentageDelta > 0 && stats.percentage >= options.minPercentageToReactUp) {
-                    tendencyIsChanged(tendencyOn, stats.percentage, percentageDeltaAbs);
+                    newTendency = tendencyOn;
                   } else if (tendency !== tendencyOff && percentageDelta < 0 && stats.percentage <= options.maxPercentageToReactDown) {
-                    tendencyIsChanged(tendencyOff, stats.percentage, percentageDeltaAbs);
+                    newTendency = tendencyOff;
+                  }
+                  if (newTendency !== '') {
+                    tendencyIsChanged(newTendency, stats.percentage, percentageDelta, statsIntervals);
                   }
                   result = true;
                 }

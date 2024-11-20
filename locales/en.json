@@ -1,4 +1,4 @@
 {
-	"Group %s - switching to on is started": "Group %s - switching to on is started",
-	"Group %s - switching to off is started": "Group %s - switching to off is started"
+	"Group %s - switching to on is started. Currently: %s, delta: %s in %s interval(s)." : "Group %s - switching to on is started. Currently: %s, delta: %s in %s interval(s).",
+	"Group %s - switching to off is started. Currently: %s, delta: %s in %s interval(s).": "Group %s - switching to off is started. Currently: %s, delta: %s in %s interval(s)."
 }
