@@ -2,16 +2,13 @@
 
 ## [1.6.0](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.6...v1.6.0) (2024-11-22)
 
-
 ### Features
 
 * added new method of tendency detection with appropriate command line options. ([31a138e](https://github.com/PetroVoronov/svitlobot-monitor/commit/31a138e1e29cd06280f366aa1d18125151a25edb))
 
-
 ### Bug Fixes
 
 * correct tendency change detection logic and adjust stats buffer management ([8613b43](https://github.com/PetroVoronov/svitlobot-monitor/commit/8613b4352186e1a7784cb72f80fafcd1f8d86c42))
-
 
 ### Code Refactoring
 
@@ -21,7 +18,6 @@
 * rename tendency detection variables for clarity and consistency ([83db128](https://github.com/PetroVoronov/svitlobot-monitor/commit/83db12871363d89e248598eb3fb6cbbf0636f780))
 * reorder command line options and make cleanup the "old" data if tendency detected ([36163d1](https://github.com/PetroVoronov/svitlobot-monitor/commit/36163d1da653d0b26b86a81c14e3f16bc0f1666b))
 * tendency detection ([23a64fd](https://github.com/PetroVoronov/svitlobot-monitor/commit/23a64fdc21dad2880e63ad69bcff818751e25ef1))
-
 
 ### Miscellaneous Chores
 
