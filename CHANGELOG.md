@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.6.0](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.6...v1.6.0) (2024-11-22)
+
+
+### Features
+
+* added new method of tendency detection with appropriate command line options. ([31a138e](https://github.com/PetroVoronov/svitlobot-monitor/commit/31a138e1e29cd06280f366aa1d18125151a25edb))
+
+
+### Bug Fixes
+
+* correct tendency change detection logic and adjust stats buffer management ([8613b43](https://github.com/PetroVoronov/svitlobot-monitor/commit/8613b4352186e1a7784cb72f80fafcd1f8d86c42))
+
+
+### Code Refactoring
+
+* add to message current percentage and latest delta ([31a138e](https://github.com/PetroVoronov/svitlobot-monitor/commit/31a138e1e29cd06280f366aa1d18125151a25edb))
+* improve detection if no stable tendency in place ([83db128](https://github.com/PetroVoronov/svitlobot-monitor/commit/83db12871363d89e248598eb3fb6cbbf0636f780))
+* improve tendency detection messages with interval information and improve logic for stability checks ([8ff5031](https://github.com/PetroVoronov/svitlobot-monitor/commit/8ff50319d8b9740c39bc63330ed8c98869ebd388))
+* rename tendency detection variables for clarity and consistency ([83db128](https://github.com/PetroVoronov/svitlobot-monitor/commit/83db12871363d89e248598eb3fb6cbbf0636f780))
+* reorder command line options and make cleanup the "old" data if tendency detected ([36163d1](https://github.com/PetroVoronov/svitlobot-monitor/commit/36163d1da653d0b26b86a81c14e3f16bc0f1666b))
+* tendency detection ([23a64fd](https://github.com/PetroVoronov/svitlobot-monitor/commit/23a64fdc21dad2880e63ad69bcff818751e25ef1))
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** Bump globals from 15.11.0 to 15.12.0 ([9be0430](https://github.com/PetroVoronov/svitlobot-monitor/commit/9be04302cdfbea1ba95830259e0f0e4ead27d5ab))
+* **deps-dev:** Bump markdownlint-cli2 from 0.14.0 to 0.15.0 ([a00df5c](https://github.com/PetroVoronov/svitlobot-monitor/commit/a00df5c78feb4ad144dc795467c7b3f209718c30))
+* **deps:** Bump grammy from 1.31.0 to 1.32.0 ([4879d7c](https://github.com/PetroVoronov/svitlobot-monitor/commit/4879d7c3042a5978789f0b708f37e110e2713237))
+* **deps:** Bump telegram from 2.26.6 to 2.26.8 ([477250c](https://github.com/PetroVoronov/svitlobot-monitor/commit/477250cb62ce06168ffc5b4a7cf9eb20b094bf4a))
+* reorder command line options ([23a64fd](https://github.com/PetroVoronov/svitlobot-monitor/commit/23a64fdc21dad2880e63ad69bcff818751e25ef1))
+
 ## [1.5.6](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.5...v1.5.6) (2024-11-06)
 
 ### Code Refactoring
