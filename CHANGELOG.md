@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.6.0...v1.6.1) (2024-11-22)
+
+
+### Code Refactoring
+
+* update uk locale ([a99e5ab](https://github.com/PetroVoronov/svitlobot-monitor/commit/a99e5ab0b78dc9c82b90acd9a13f7ebcecfce5e0))
+
 ## [1.6.0](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.5.6...v1.6.0) (2024-11-22)
 
 ### Features
