@@ -1,4 +1,4 @@
 {
-    "Group %s - switching to on is started": "💡 %s - Einschalten wird gestartet!",
-    "Group %s - switching to off is started": "🕯 %s - Ausschalten wird gestartet!"
+    "Group %s - switching to on is started. Currently: %s, delta: %s in %s minute(s).": "💡 Gruppe %s - das Einschalten wird gestartet. Derzeit: %s, Delta: %s in %s Minute(n).",
+    "Group %s - switching to off is started. Currently: %s, delta: %s in %s minute(s).": "🕯 Gruppe %s - das Ausschalten wird gestartet. Derzeit: %s, Delta: %s in %s Minute(n)."
 }

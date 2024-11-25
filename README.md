@@ -95,12 +95,16 @@ The script accepts various command-line parameters to customize its behavior. Be
 | Option                                    |  Short  | Description | Type | Default | Required |
 |-------------------------------------------|---------|-------------|------|---------|----------|
 | `--as-user`                               |         | Start as user instance (bot instance by default) | `boolean` | | No |
+| `--refresh-interval`                      | `-r`    | Refresh interval in minutes, to get the data | `number` | `1` | No |
 | `--group`                                 | `-g`    | DTEK group id | `number` | `1` | No |
-| `--step-interval-pair`                    | `-s`    | Value step in percentage and time interval in minutes, to detect the tendency. Format is "percentage:time" | `array` | 5% during 1 minute | No |
+| `--period-of-fixed-tendency`              |         | Period in minutes, the tendency is usually not changed on opposite | `number` | `60` | No |
 | `--max`, `--max-percentage-to-react-down` |         | Value in percentage, to react on decrease of percentage | `number` | `80` | No |
 | `--min`, `--min-percentage-to-react-up`   |         | Value in percentage, to react on increase of percentage | `number` | `30` | No |
-| `--period-of-fixed-tendency`              |         | Period in minutes, the tendency is usually not changed on opposite | `number` | `60` | No |
-| `--refresh-interval`                      | `-r`    | Refresh interval in minutes, to get the data | `number` | `1` | No |
+| `--step-interval-pair`                    | `-s`    | Value step in percentage and time interval in minutes, to detect the tendency. Format is "percentage:time" | `array` | 5% during 1 minute | No |
+| `--tendency-detect-new`                   |         | Detect tendency by using another algorithm | `boolean` | `false` | No |
+| `--tendency-detect-period`                |         | Count of measures to detect the tendency | `number` | `5` | No |
+| `--tendency-detect-stable-interval`       |         | Count of measures to detect the stable tendency. Should be less than "tendency-detect-period" | `number` | `3` | No |
+| `--tendency-detect-delta`                 |         | Delta between the measures to detect the tendency. In percentage, to react on change of percentage, during the detect period | `number` | `5` | No |
 | `--without-telegram`                      |         | Start without Telegram client | `boolean` | | No |
 | `--language`                              | `-l`    | Language code for i18n | `string` | `en` | No |
 | `--pin-message`                           | `-p`    | Unpin message from chat | `boolean` | `false` | No |
@@ -124,6 +128,28 @@ You can specify multiple pairs by separating them with a space. For example:
 - `--step-interval-pair 5:10 10:30 15:60`
 
 This allows the script to detect tendencies based on different step and interval combinations.
+
+#### Usage of the "new" algorithm to detect the tendency
+
+By default, the script uses the "old", i.e.step intervals, algorithm to detect the tendency. But you can use the "new" algorithm by passing the `--tendency-detect-new` parameter. Another possibility to switch to the "new" algorithm is to set one of the following parameters: `--tendency-detect-period`, `--tendency-detect-stable-interval`, `--tendency-detect-delta` to the value different from the default.
+
+##### Parameter `--tendency-detect-new`
+
+Simple flag to switch to the "new" algorithm to detect the tendency.
+
+##### Parameter `--tendency-detect-period`
+
+The count of measures to detect the tendency. The default value is `5`. In case of the default value of `--refresh-interval`  the period is 5 minutes.
+
+##### Parameter `--tendency-detect-stable-interval`
+
+The count of measures to detect the stable tendency. The default value is `3`. Should be less than `--tendency-detect-period`.
+Means that the tendency is stable if the count of measures with the same tendency is equal or more than this value. I.e. if the values are stable increasing or stable decreasing. Step of value change can be any, but the tendency should be the same.
+
+##### Parameter `--tendency-detect-delta`
+
+The delta between the measures on the beginning and the end of the period to detect the tendency. The default value is `5`. In percentage, to react on change of percentage, during the detect period.
+There is a second important parameter to detect the tendency. In some cases the value can be growing and then decreasing without any stable interval, but in total the value and the end of the period will be bigger or smaller than at the beginning. This parameter is used to detect such cases.
 
 ### Usage Example
 

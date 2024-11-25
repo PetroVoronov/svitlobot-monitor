@@ -25,6 +25,13 @@ const options = yargs
     default: false,
     demandOption: false,
   })
+  .option('r', {
+    alias: 'refresh-interval',
+    describe: 'Refresh interval in minutes, to get the data',
+    type: 'number',
+    default: 1,
+    demandOption: false,
+  })
   .option('g', {
     alias: 'group',
     describe: 'DTEK group id',
@@ -32,11 +39,10 @@ const options = yargs
     default: 1,
     demandOption: false,
   })
-  .option('s', {
-    alias: 'step-interval-pair',
-    describe: 'Value step in percentage and time interval in minutes, to detect the tendency. Format is "percentage:time"',
-    type: 'array',
-    default: ['5:1'],
+  .option('period-of-fixed-tendency', {
+    describe: 'Period in minutes, when the tendency is usually not changed on opposite',
+    type: 'number',
+    default: 60,
     demandOption: false,
   })
   .option('max', {
@@ -51,6 +57,13 @@ const options = yargs
     describe: 'Value in percentage, to react on increase of percentage',
     type: 'number',
     default: 30,
+    demandOption: false,
+  })
+  .option('s', {
+    alias: 'step-interval-pair',
+    describe: 'Value step in percentage and time interval in minutes, to detect the tendency. Format is "percentage:time"',
+    type: 'array',
+    default: ['5:1'],
     demandOption: false,
   })
   .option('tendency-detect-new', {
@@ -76,19 +89,6 @@ const options = yargs
       'Delta between the measures to detect the tendency. In percentage, to react on change of percentage, during the detect period',
     type: 'number',
     default: 5,
-    demandOption: false,
-  })
-  .option('period-of-fixed-tendency', {
-    describe: 'Period in minutes, when the tendency is usually not changed on opposite',
-    type: 'number',
-    default: 60,
-    demandOption: false,
-  })
-  .option('r', {
-    alias: 'refresh-interval',
-    describe: 'Refresh interval in minutes, to get the data',
-    type: 'number',
-    default: 1,
     demandOption: false,
   })
   .option('without-telegram', {
@@ -646,11 +646,11 @@ function tendencyIsChanged(tendencyNew, percentage, percentageDelta, intervals =
     const messageText =
       (options.addTimestamp ? timeStamp + ': ' : '') +
       i18n.__(
-        `Group %s - switching to ${startedSwitchingOn ? 'on' : 'off'} is started. Currently: %s, delta: %s in %s interval(s).`,
+        `Group %s - switching to ${startedSwitchingOn ? 'on' : 'off'} is started. Currently: %s, delta: %s in %s minute(s).`,
         groupId,
         `${percentage}%`,
         `${percentageDelta}%`,
-        intervals,
+        intervals * options.refreshInterval,
       );
 
     const currentHour = options.timeZone
