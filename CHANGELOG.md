@@ -2,11 +2,9 @@
 
 ## [1.6.2](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.6.1...v1.6.2) (2024-11-25)
 
-
 ### Code Refactoring
 
 * update localization strings and enhance command-line options ([be75dd3](https://github.com/PetroVoronov/svitlobot-monitor/commit/be75dd33df0460d4af635eaa0267b7eddf9da549))
-
 
 ### Documentation
 
