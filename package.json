@@ -15,7 +15,7 @@
   "author": "Petro Voronov <petro.voronov@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "axios": "^1.7.2",
+    "axios": "^1.7.9",
     "grammy": "^1.32.0",
     "i18n": "^0.15.1",
     "json-stringify-safe": "^5.0.1",
