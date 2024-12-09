@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.6.3](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.6.2...v1.6.3) (2024-12-09)
+
+
+### Bug Fixes
+
+* **localization:** update Ukrainian translation for time units ([1654c15](https://github.com/PetroVoronov/svitlobot-monitor/commit/1654c1535365a24cc91bd848f51d05f2095337a1))
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** Bump eslint-plugin-sonarjs from 2.0.4 to 3.0.1 ([d6127dd](https://github.com/PetroVoronov/svitlobot-monitor/commit/d6127dd217590cc1379a7c00a5d4ff4fe6195301))
+* **deps-dev:** Bump globals from 15.12.0 to 15.13.0 ([6509d0b](https://github.com/PetroVoronov/svitlobot-monitor/commit/6509d0b117c364f2431f1a75082021518e6f7c75))
+* **deps:** Bump axios from 1.7.7 to 1.7.9 ([21482ec](https://github.com/PetroVoronov/svitlobot-monitor/commit/21482ecb39d1f69823aadd62113bdb5e70a1aa16))
+* **deps:** Bump grammy from 1.32.0 to 1.33.0 ([c6a9ae7](https://github.com/PetroVoronov/svitlobot-monitor/commit/c6a9ae70f35cf41cbd3f60ca850b20ac2145fedc))
+
 ## [1.6.2](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.6.1...v1.6.2) (2024-11-25)
 
 ### Code Refactoring
