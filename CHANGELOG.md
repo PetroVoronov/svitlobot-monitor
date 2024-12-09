@@ -2,11 +2,9 @@
 
 ## [1.6.3](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.6.2...v1.6.3) (2024-12-09)
 
-
 ### Bug Fixes
 
 * **localization:** update Ukrainian translation for time units ([1654c15](https://github.com/PetroVoronov/svitlobot-monitor/commit/1654c1535365a24cc91bd848f51d05f2095337a1))
-
 
 ### Miscellaneous Chores
 
