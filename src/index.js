@@ -209,7 +209,7 @@ const svitloBotAPI = 'https://api.svitlobot.in.ua/website/getChannelsForMap';
 const refreshInterval = options.refreshInterval * 60 * 1000;
 
 const cityId = 'Київ ->';
-const groupId = `${cityId} Група ${options.group}`;
+const groupId = `Група ${options.group}`;
 
 let stepIntervalPairs = [];
 let intervalMax = options.refreshInterval;
