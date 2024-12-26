@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.6.4](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.6.3...v1.6.4) (2024-12-26)
+
+
+### Code Refactoring
+
+* remove city prefix from groupId in index.js to align with new format by svitlobot ([5f1d4de](https://github.com/PetroVoronov/svitlobot-monitor/commit/5f1d4de022c42a688f0ea88d8ab6a4543c03669c))
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** Bump globals from 15.13.0 to 15.14.0 ([558fc2e](https://github.com/PetroVoronov/svitlobot-monitor/commit/558fc2e1b780e93bf0f30443c9035beb919e41b2))
+* **deps-dev:** Bump markdownlint-cli2 from 0.15.0 to 0.16.0 ([6837e96](https://github.com/PetroVoronov/svitlobot-monitor/commit/6837e9696c6f24f329d43651b5df07135c7d9fb0))
+
 ## [1.6.3](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.6.2...v1.6.3) (2024-12-09)
 
 ### Bug Fixes

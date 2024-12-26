@@ -1,6 +1,6 @@
 {
   "name": "svitlobot-monitor",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "description": "A script to monitor the https://svitlobot.in.ua data and send alerts if the electricity is going up or down in selected group.",
   "main": "src/index.js",
   "keywords": [
