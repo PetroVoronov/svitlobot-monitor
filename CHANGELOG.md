@@ -2,7 +2,6 @@
 
 ## [1.6.5](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.6.4...v1.6.5) (2024-12-26)
 
-
 ### Code Refactoring
 
 * adjust standard deviation filter to 2 sigma in dataClean function ([2eb8689](https://github.com/PetroVoronov/svitlobot-monitor/commit/2eb8689c25d261e3538e335b54ed87475e190466))
