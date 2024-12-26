@@ -731,7 +731,7 @@ function dataClean(data) {
     const sum = data.reduce((acc, item) => acc + item.timeStamp, 0),
       avg = sum / data.length,
       variance = data.reduce((acc, item) => acc + Math.pow(item.timeStamp - avg, 2), 0) / data.length,
-      stdDev = Math.sqrt(variance);
+      stdDev = Math.sqrt(variance) * 2;
     return data.filter((item) => item.timeStamp >= avg - stdDev && item.timeStamp <= avg + stdDev);
   } else {
     return data;
