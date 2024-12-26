@@ -2,11 +2,9 @@
 
 ## [1.6.4](https://github.com/PetroVoronov/svitlobot-monitor/compare/v1.6.3...v1.6.4) (2024-12-26)
 
-
 ### Code Refactoring
 
 * remove city prefix from groupId in index.js to align with new format by svitlobot ([5f1d4de](https://github.com/PetroVoronov/svitlobot-monitor/commit/5f1d4de022c42a688f0ea88d8ab6a4543c03669c))
-
 
 ### Miscellaneous Chores
 
